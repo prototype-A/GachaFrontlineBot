@@ -1,24 +1,16 @@
 package com.keegan.bot.Dude_Guy_Bot;
 
 import sx.blah.discord.api.IDiscordClient;
-import sx.blah.discord.api.events.EventSubscriber;
-import sx.blah.discord.api.internal.json.objects.EmbedObject;
-import sx.blah.discord.handle.impl.events.guild.channel.message.reaction.ReactionAddEvent;
-import sx.blah.discord.handle.impl.obj.ReactionEmoji;
 import sx.blah.discord.handle.obj.IEmbed;
 import sx.blah.discord.handle.obj.IMessage;
 import sx.blah.discord.handle.obj.IUser;
 import sx.blah.discord.util.EmbedBuilder;
-import sx.blah.discord.util.RateLimitException;
 
 import org.json.JSONArray;
-import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.awt.Color;
-import java.time.LocalTime;
 import java.util.Iterator;
-import java.util.concurrent.CompletableFuture;
 
 
 public class TDollInfoEmbed extends CGScroll {

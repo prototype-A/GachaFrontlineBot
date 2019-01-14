@@ -12,7 +12,6 @@ import sx.blah.discord.util.EmbedBuilder;
 import sx.blah.discord.util.RateLimitException;
 
 import org.json.JSONArray;
-import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.awt.Color;
