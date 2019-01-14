@@ -71,12 +71,12 @@
     </dependency>
   </dependencies>
   <properties>
-    <project.http.version>1.20.0</project.http.version>
-    <project.youtube.version>v3-rev182-1.22.0</project.youtube.version>
-    <project.youtube.reporting.version>v1-rev10-1.22.0</project.youtube.reporting.version>
     <project.oauth.version>1.20.0</project.oauth.version>
-    <project.youtube.analytics.version>v1-rev63-1.22.0</project.youtube.analytics.version>
+    <project.http.version>1.20.0</project.http.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <project.youtube.analytics.version>v1-rev63-1.22.0</project.youtube.analytics.version>
+    <project.youtube.reporting.version>v1-rev10-1.22.0</project.youtube.reporting.version>
+    <project.youtube.version>v3-rev182-1.22.0</project.youtube.version>
   </properties>
 </project>
 

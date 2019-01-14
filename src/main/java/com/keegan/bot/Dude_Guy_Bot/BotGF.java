@@ -51,7 +51,7 @@ public class BotGF extends Command {
 				IMessage msg = sendMessage(displayTdollInfo(arg, mod3));
 				try {
 					JSONObject cgJson = getTdollData(arg).getJSONObject("cg");
-					CGScroll cgScroller = new CGScroll(cmdMessage.getAuthor(), msg, botClient, cgJson, mod3);
+					CGScroll cgScroller = new TDollInfoEmbed(cmdMessage.getAuthor(), msg, botClient, cgJson, mod3);
 					cgScroller.start();
 				} catch (Exception e) {
 					e.printStackTrace();
