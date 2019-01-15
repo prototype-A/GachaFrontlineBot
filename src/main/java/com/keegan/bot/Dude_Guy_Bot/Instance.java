@@ -42,8 +42,8 @@ public class Instance {
 	private final String TOKEN; // The bot's login token
 	private final String CMD_TRIGGER; // The symbol(s) to invoke bot commands
 	private static List<IGuild> guildList;
-	private HashMap<String, Command> pmCommands;
-	private HashMap<String, Command> guildCommands;
+	private static HashMap<String, Command> pmCommands;
+	private static HashMap<String, Command> guildCommands;
 
 
 	public Instance(String token, String trigger) {
@@ -58,8 +58,8 @@ public class Instance {
 	}
 
 	private void initCommands() {
-		initPmCommands();
 		initGuildCommands();
+		initPmCommands();
 	}
 
 	/**
@@ -67,7 +67,7 @@ public class Instance {
 	 */
 	private void initPmCommands() {
 		pmCommands = new HashMap<String, Command>();
-		pmCommands.put("help", new BotHelp("tochannel"));
+		pmCommands.put("help", new BotHelp("tochannel", guildCommands));
   	}
 
 	/**
@@ -78,8 +78,8 @@ public class Instance {
 		guildCommands.put("avatar", new BotMisc("avatar"));
 		//guildCommands.put("equip", new BotGF("equip"));
 		//guildCommands.put("equipment", new BotGF("equip"));
-		guildCommands.put("help", new BotHelp("tochannel"));
-		guildCommands.put("pmhelp", new BotHelp("topm"));
+		guildCommands.put("help", new BotHelp("tochannel", guildCommands));
+		guildCommands.put("pmhelp", new BotHelp("topm", guildCommands));
 		guildCommands.put("quote", new BotMisc("quote"));
 		guildCommands.put("tdoll", new BotGF("tdoll"));
 		guildCommands.put("t-doll", new BotGF("tdoll"));
@@ -181,6 +181,7 @@ public class Instance {
 			}
 		}
 		catch (Exception e) {
+			// Command not found/error occurred
 			Main.displayError(e.getMessage() + " occurred when running a command", e);
 		}
 

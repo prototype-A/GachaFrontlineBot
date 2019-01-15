@@ -17,7 +17,9 @@ import java.util.Scanner;
 
 public class BotGF extends Command {
 
-	private JSONObject dataJson;
+	private JSONObject tdollDataJson;
+	private JSONObject timerDataJson;
+	private JSONObject equipDataJson;
 
 
 	public BotGF(String command) {
@@ -85,7 +87,7 @@ public class BotGF extends Command {
 
 		// Get possible T-dolls
 		try {
-			return JsonEmbed.successEmbedJson("**Possible T-Dolls:** " + dataJson.getString(timer));
+			return JsonEmbed.successEmbedJson("**Possible T-Dolls:** " + timerDataJson.getString(timer));
 		} catch (Exception e) {}
 
 		// No T-dolls with timer
@@ -96,10 +98,10 @@ public class BotGF extends Command {
 
 		// Check if nickname
 		try {
-			return dataJson.getJSONObject(dataJson.getJSONObject(name).getString("data"));
+			return tdollDataJson.getJSONObject(tdollDataJson.getJSONObject(name).getString("data"));
 		} catch (Exception e) {}
 
-		return dataJson.getJSONObject(name);
+		return tdollDataJson.getJSONObject(name);
 	}
 
 	private EmbedObject displayTdollInfo(String name, boolean mod3) {
@@ -358,15 +360,9 @@ public class BotGF extends Command {
 	*/
 
 	private void loadJson() {
-		if (this.command == "tdoll") {
-			this.dataJson = loadJsonFile("TdollData.json");
-		} else if (this.command == "equip") {
-			this.dataJson = loadJsonFile("EquipmentData.json");
-		} else if (this.command == "timer") {
-			this.dataJson = loadJsonFile("ProductionTimers.json");
-		} else if (this.command == "cgscroll") {
-			this.dataJson = loadJsonFile("TdollData.json");
-		}
+		tdollDataJson = loadJsonFile("TdollData.json");
+		timerDataJson = loadJsonFile("ProductionTimers.json");
+		equipDataJson = loadJsonFile("EquipmentData.json");
 	}
 
 	private JSONObject loadJsonFile(String fileName) {
@@ -388,6 +384,12 @@ public class BotGF extends Command {
 	}
 
 	public String getHelp() {
-		return "";
+		String helpMessage = "";
+		if (this.command.equals("tdoll")) {
+			helpMessage += formatHelpMessage("t-doll", "tdoll (mod3)", "Displays CG and detailed information of that T-Doll ('s digimind upgrade)");
+		} else if (this.command.equals("timer")) {
+			helpMessage += formatHelpMessage(this.command, "h:mm", "Displays the potential T-Dolls with that construction timer");
+		}
+		return helpMessage;
 	}
 }

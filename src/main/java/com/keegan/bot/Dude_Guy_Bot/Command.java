@@ -31,7 +31,6 @@ public abstract class Command implements Runnable {
 		cmdMessage = message;
 		botClient = client;
 		guild = message.getGuild();
-		delayPeriod = Integer.parseInt(Main.getParameter("TempMessageTime")) * 1000;
 	}
 
 	public abstract void run();
@@ -235,7 +234,7 @@ public abstract class Command implements Runnable {
 
 		try {
 			newMessage = sendMessage(content);
-			delay(delayPeriod);
+			delay(Integer.parseInt(Main.getParameter("TempMessageTime")) * 1000);
 			newMessage.delete();
 			cmdMessage.delete();
 		} catch (Exception e) {
@@ -276,9 +275,28 @@ public abstract class Command implements Runnable {
 		message.addReaction(ReactionEmoji.of(emoji));
 	}
 
-	protected String formatHelpMessage(String command, String params) {
-		return "'**" + command + "**" + ((params != null || !params.equals("")) ? 
-			" *" + params + "* '" : "'");
+	protected String formatHelpCommand(String command) {
+		return "'**" + Main.getKey() + command + "**' ";
+	}
+
+	protected String formatHelpCommand(String command, String params) {
+		if (params == null || params.equals("")) {
+			return formatHelpCommand(command);
+		}
+
+		return "'**" + Main.getKey() + command + "** *" + params + "*' ";
+	}
+
+	protected String formatHelpMessage(String command, String helpMsg) {
+		return formatHelpCommand(command) + " - " + helpMsg + "\n";
+	}
+
+	protected String formatHelpMessage(String command, String params, String helpMsg) {
+		if (params == null || params.equals("")) {
+			return formatHelpMessage(command, helpMsg);
+		}
+
+		return formatHelpCommand(command, params) + " - " + helpMsg + "\n";
 	}
 
 	/**
