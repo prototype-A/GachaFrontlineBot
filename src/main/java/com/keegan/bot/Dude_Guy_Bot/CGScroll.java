@@ -4,7 +4,6 @@ import sx.blah.discord.api.IDiscordClient;
 import sx.blah.discord.api.events.EventSubscriber;
 import sx.blah.discord.api.internal.json.objects.EmbedObject;
 import sx.blah.discord.handle.impl.events.guild.channel.message.reaction.ReactionAddEvent;
-import sx.blah.discord.handle.impl.obj.ReactionEmoji;
 import sx.blah.discord.handle.obj.IEmbed;
 import sx.blah.discord.handle.obj.IMessage;
 import sx.blah.discord.handle.obj.IUser;
@@ -20,18 +19,19 @@ import java.util.Iterator;
 import java.util.concurrent.CompletableFuture;
 
 
-public abstract class CGScroll extends Thread {
+public abstract class CGScroll extends EmbedMessage {
 
 	private final IUser USR;
 	private IMessage msg;
 	private final LocalTime END_TIME;
 	protected final JSONObject IMG_JSON;
 	protected final String[] IMG_LIST;
-	private static final String[] NAV = {"⬅", "➡"};
+	private static final String[] NAV_EMOJIS = {"⬅", "➡"};
 	protected int imgIndex = 0;
 
 
 	public CGScroll(IUser usr, IMessage msg, IDiscordClient bot, JSONObject imgJson) {
+		super(NAV_EMOJIS);
 		this.USR = usr;
 		this.msg = msg;
 		this.IMG_JSON = imgJson;
@@ -46,13 +46,14 @@ public abstract class CGScroll extends Thread {
 			// Before time limit
 			while (LocalTime.now().isBefore(END_TIME)) {
 				try {
-					this.sleep(1000);
+					Thread.sleep(1000);
 				} catch (Exception e) {}
 			}
 			// After time limit
 			this.msg.removeAllReactions();
 			try {
-				this.join();
+				//Thread.join();
+				this.run();
 			} catch (Exception e) {}
 		});
 	}
@@ -99,54 +100,7 @@ public abstract class CGScroll extends Thread {
 		return getImage();
 	}
 
-	/**
-	 * Try to add emojis as reactions to the message asap, retrying
-	 * after getting a RateLimitException and waiting out its delay
-	 * period so all reactions will be added eventually
-	 *
-	 * @param message The message to add emojis to
-	 * @param emoji The emoji to add
-	 */
-	protected void addEmojisToMessage(IMessage message, String[] emojis) {
-		for (int emoji = 0; emoji < emojis.length; emoji++) {
-			try {
-				addEmojiToMessage(message, emojis[emoji]);
-			} catch (RateLimitException e) {
-				delay(e.getRetryDelay() + 1);
-				addEmojiToMessage(message, emojis[emoji]);
-			} catch (Exception e) {
-				Main.displayError(e.getMessage() + " occurred while adding a reaction", e);
-			}
-		}
-	}
-
-	/**
-	 * Try to add emojis as reactions to the message asap, retrying
-	 * after getting a RateLimitException and waiting out its delay
-	 * period so all reactions will be added eventually
-	 *
-	 * @param message The message to add emojis to
-	 * @param emoji The emoji to add
-	 */
-	private void addEmojiToMessage(IMessage message, String emoji) {
-		message.addReaction(ReactionEmoji.of(emoji));
-	}
-
-	/**
-	 * Wait for delayPeriod milliseconds before resuming
-	 */
-	private void delay(long period) {
-		try {
-			Thread.sleep(period);
-		} catch (InterruptedException e) {
-			Main.displayWarning("CG Scrolling thread sleep interrupted: Continuing execution");
-		} catch (IllegalArgumentException e) {
-			//Main.displayError("Negative timeout value occurred: Trying again");
-			delay(period);
-		}
-	}
-
-	private void redoReacts() {
+	protected void redoReacts() {
 		this.msg.removeAllReactions();
 		addEmojisToMessage(this.msg, NAV);
 	}
