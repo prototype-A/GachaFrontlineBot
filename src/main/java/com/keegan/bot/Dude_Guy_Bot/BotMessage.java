@@ -9,7 +9,7 @@ import sx.blah.discord.util.MessageBuilder;
 import sx.blah.discord.util.RateLimitException;
 
 
-public abstract class BotMessage {
+public abstract class BotMessage extends Thread {
 
 	protected IMessage cmdMessage;
 	protected IGuild guild;
@@ -35,8 +35,11 @@ public abstract class BotMessage {
 
 		try {
 			newMessage = msgBuilder.build();
+		} catch (RateLimitException e) {
+			delay(e.getRetryDelay() + 1);
+			sendMessage(content);
 		} catch (Exception e) {
-			Main.displayError("Error sending message: \"" + content + "\"", e);
+			//Main.displayError("Error sending message: \"" + content + "\"", e);
 		} finally {
 			return newMessage;
 		}
@@ -56,8 +59,11 @@ public abstract class BotMessage {
 		try {
 			newMessage = sendMessage(content);
 			addEmojisToMessage(newMessage, emojis);
+		} catch (RateLimitException e) {
+			delay(e.getRetryDelay() + 1);
+			sendMessage(content, emojis);
 		} catch (Exception e) {
-			Main.displayError("Error sending message: \"" + content + "\", " + e.getMessage() + " occurred", e);
+			//Main.displayError("Error sending message: \"" + content + "\", " + e.getMessage() + " occurred", e);
 		} finally {
 			return newMessage;
 		}
@@ -73,8 +79,11 @@ public abstract class BotMessage {
 		IMessage newMessage = null;
 		try {
 			newMessage = cmdMessage.getChannel().sendMessage(embedContent);
+		} catch (RateLimitException e) {
+			delay(e.getRetryDelay() + 1);
+			sendMessage(embedContent);
 		} catch (Exception e) {
-			Main.displayError("Error sending message: " + e.getMessage() + " occurred", e);
+			//Main.displayError("Error sending message: " + e.getMessage() + " occurred", e);
 		} finally {
 			return newMessage;
 		}
@@ -96,8 +105,11 @@ public abstract class BotMessage {
 			delay(Integer.parseInt(Main.getParameter("TempMessageTime")) * 1000);
 			newMessage.delete();
 			cmdMessage.delete();
+		} catch (RateLimitException e) {
+			delay(e.getRetryDelay() + 1);
+			sendTempMessage(content);
 		} catch (Exception e) {
-			Main.displayError(e.getMessage() + " occurred while attempting to delete a temporary message", e);
+			//Main.displayError(e.getMessage() + " occurred while attempting to delete a temporary message", e);
 		}
 	}
 
@@ -117,7 +129,7 @@ public abstract class BotMessage {
 				delay(e.getRetryDelay() + 1);
 				addEmojiToMessage(message, emojis[emoji]);
 			} catch (Exception e) {
-				Main.displayError(e.getMessage() + " occurred while adding a reaction", e);
+				//Main.displayError(e.getMessage() + " occurred while adding a reaction", e);
 			}
 		}
 	}
@@ -143,7 +155,7 @@ public abstract class BotMessage {
 		try {
 			Thread.sleep(period);
 		} catch (InterruptedException e) {
-			Main.displayWarning("Thread sleep interrupted: Continuing execution");
+			//Main.displayWarning("Thread sleep interrupted: Continuing execution");
 		} catch (IllegalArgumentException e) {
 			//Main.displayError("Negative timeout value occurred: Trying again");
 			delay(period);

@@ -21,8 +21,6 @@ import java.util.concurrent.CompletableFuture;
 
 public abstract class CGScroll extends EmbedMessage {
 
-	private final IUser USR;
-	private IMessage msg;
 	private final LocalTime END_TIME;
 	protected final JSONObject IMG_JSON;
 	protected final String[] IMG_LIST;
@@ -30,31 +28,29 @@ public abstract class CGScroll extends EmbedMessage {
 	protected int imgIndex = 0;
 
 
-	public CGScroll(IUser usr, IMessage msg, IDiscordClient bot, JSONObject imgJson) {
-		super(NAV_EMOJIS);
-		this.USR = usr;
-		this.msg = msg;
+	public CGScroll(IDiscordClient bot, IMessage msg, IUser usr, JSONObject imgJson) {
+		super(NAV_EMOJIS, bot, msg, usr);
 		this.IMG_JSON = imgJson;
 		this.IMG_LIST = buildImgList();
 		this.END_TIME = LocalTime.now().plusSeconds(Integer.parseInt(Main.getParameter("CGScrollTime")) * IMG_LIST.length);
-
-		bot.getDispatcher().registerListener(this);
-		addEmojisToMessage(this.msg, NAV);
 
 		// Timeout after x seconds
 		CompletableFuture.runAsync(() -> {
 			// Before time limit
 			while (LocalTime.now().isBefore(END_TIME)) {
 				try {
-					Thread.sleep(1000);
-				} catch (Exception e) {}
+					this.sleep(1000);
+				} catch (InterruptedException e) {}
 			}
 			// After time limit
-			this.msg.removeAllReactions();
 			try {
-				//Thread.join();
-				this.run();
-			} catch (Exception e) {}
+				this.msg.removeAllReactions();
+				this.join();
+			} catch (RateLimitException e1) {
+				try {
+					this.sleep(e1.getRetryDelay() + 1);
+				} catch (InterruptedException e2) {}
+			} catch (InterruptedException e3) {}
 		});
 	}
 

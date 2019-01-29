@@ -70,6 +70,30 @@ public class BotHelp extends Command {
 		}
 	}
 
+	public static String formatHelpCommand(String command) {
+		return "'**" + Main.getKey() + command + "**' ";
+	}
+
+	public static String formatHelpCommand(String command, String params) {
+		if (params == null || params.equals("")) {
+			return formatHelpCommand(command);
+		}
+
+		return "'**" + Main.getKey() + command + "** *" + params + "*' ";
+	}
+
+	public static String formatHelpMessage(String command, String helpMsg) {
+		return formatHelpCommand(command) + " - " + helpMsg + "\n";
+	}
+
+	public static String formatHelpMessage(String command, String params, String helpMsg) {
+		if (params == null || params.equals("")) {
+			return formatHelpMessage(command, helpMsg);
+		}
+
+		return formatHelpCommand(command, params) + " - " + helpMsg + "\n";
+	}
+
 	public String getHelp() {
 		String helpMessage = "";
 		if (this.command.equals("topm")) {

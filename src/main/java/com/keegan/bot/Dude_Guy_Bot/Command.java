@@ -153,30 +153,6 @@ public abstract class Command extends BotMessage implements Runnable {
 		return null;
 	}
 
-	protected String formatHelpCommand(String command) {
-		return "'**" + Main.getKey() + command + "**' ";
-	}
-
-	protected String formatHelpCommand(String command, String params) {
-		if (params == null || params.equals("")) {
-			return formatHelpCommand(command);
-		}
-
-		return "'**" + Main.getKey() + command + "** *" + params + "*' ";
-	}
-
-	protected String formatHelpMessage(String command, String helpMsg) {
-		return formatHelpCommand(command) + " - " + helpMsg + "\n";
-	}
-
-	protected String formatHelpMessage(String command, String params, String helpMsg) {
-		if (params == null || params.equals("")) {
-			return formatHelpMessage(command, helpMsg);
-		}
-
-		return formatHelpCommand(command, params) + " - " + helpMsg + "\n";
-	}
-
 	protected void redoReacts() {}
 
 }

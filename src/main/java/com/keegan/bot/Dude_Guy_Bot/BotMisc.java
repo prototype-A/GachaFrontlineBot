@@ -124,9 +124,9 @@ public class BotMisc extends Command {
 	public String getHelp() {
 		String helpMessage = "";
 		if (command.equals("avatar")) {
-			helpMessage += formatHelpMessage("avatar", "Gets own Discord profile picture");
-			helpMessage += formatHelpMessage("avatar", "user", "Gets the Discord profile picture of the specified user (case-sensitive)");
-			helpMessage += formatHelpMessage("avatar", "user_id", "Gets the Discord profile picture of the user with user_id");
+			helpMessage += BotHelp.formatHelpMessage("avatar", "Gets own Discord profile picture");
+			helpMessage += BotHelp.formatHelpMessage("avatar", "user", "Gets the Discord profile picture of the specified user (case-sensitive)");
+			helpMessage += BotHelp.formatHelpMessage("avatar", "user_id", "Gets the Discord profile picture of the user with user_id");
 		}
 
 		return helpMessage;

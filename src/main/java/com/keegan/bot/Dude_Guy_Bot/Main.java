@@ -2,7 +2,10 @@ package com.keegan.bot.Dude_Guy_Bot;
 
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.HashMap;
+import java.util.Map;
 import java.util.Scanner;
 
 
@@ -27,7 +30,6 @@ public class Main {
 	 * Load settings from 'data/bot.settings' into a hashtable
 	 */
 	private static void loadSettings() {
-
 		try {
 			settings = new HashMap<String, String>();
 			Scanner reader = new Scanner(new File("data/" + SETTINGS_FILE_NAME));
@@ -39,7 +41,6 @@ public class Main {
 		} catch (FileNotFoundException e) {
 			displayError("Error with \"data/" + SETTINGS_FILE_NAME + "\"", e);
 		}
-
 	}
 
 	/**
@@ -82,6 +83,63 @@ public class Main {
 	 */
 	public static String getApiKey(String api) {
 		return getParameter(api);
+	}
+
+	public static Map<String, String> readServerSetting(String serverID, String setting) {
+		String file = "data/servers/" + serverID;
+		try {
+			settings = new HashMap<String, String>();
+			Scanner reader = new Scanner(new File(file));
+
+			while (reader.hasNext()) {
+				//putSetting(reader.nextLine());
+			}
+			reader.close();
+		} catch (FileNotFoundException e) {
+			
+		}
+
+		return null;
+	}
+
+	public static void writeServerSetting(String serverID, String setting, String value) {
+		String file = "data/servers/" + serverID;
+		try {
+			File settingsFile = new File(file);
+			Scanner reader = new Scanner(settingsFile);
+			FileWriter writer = new FileWriter(settingsFile);
+			boolean written = false;
+
+			while (reader.hasNext()) {
+				String line = reader.nextLine();
+				// Overwrite previous value
+				if (line.startsWith(setting + ":")) {
+					writer.write(setting + ": " + value);
+					written = true;
+				} else {
+					writer.write(line);
+				}
+			}
+			reader.close();
+
+			// Write setting if not in file
+			if (!written) {
+				writer.write(setting + ": " + value);
+			}
+			writer.close();
+		} catch (FileNotFoundException e1) {
+			// Create server settings file
+			try {
+				File createSettings = new File(file);
+				FileWriter writer = new FileWriter(createSettings);
+				writer.write(setting + ": " + value);
+				writer.close();
+			} catch (Exception e2) {
+				displayError("Failed to create new settings file for server", e1);
+			}
+		} catch (IOException e3) {
+			
+		}
 	}
 
 	/**

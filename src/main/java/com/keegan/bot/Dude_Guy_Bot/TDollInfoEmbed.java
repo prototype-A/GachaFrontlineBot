@@ -18,8 +18,8 @@ public class TDollInfoEmbed extends CGScroll {
 	private final boolean MOD3;
 	private static final String URL_HEADER = "https://cdn.discordapp.com/attachments/487029209114345502/";
 
-	public TDollInfoEmbed(IUser usr, IMessage msg, IDiscordClient bot, JSONObject cgJson, boolean mod3) {
-		super(usr, msg, bot, cgJson);
+	public TDollInfoEmbed(IDiscordClient bot, IMessage msg, IUser usr, JSONObject cgJson, boolean mod3) {
+		super(bot, msg, usr, cgJson);
 		this.MOD3 = mod3;
 	}
 
