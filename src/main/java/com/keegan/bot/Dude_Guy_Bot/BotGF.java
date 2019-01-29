@@ -17,19 +17,15 @@ import java.util.Scanner;
 
 public class BotGF extends Command {
 
-	private JSONObject tdollDataJson;
-	private JSONObject timerDataJson;
-	private JSONObject equipDataJson;
+	private static JSONObject tdollDataJson;
+	private static JSONObject timerDataJson;
+	//private JSONObject equipDataJson;
+	private static JSONObject mapDataJson;
 
 
 	public BotGF(String command) {
 		this.command = command;
 		loadJson();
-	}
-
-	public void init(IMessage message, IDiscordClient bot) {
-		super.init(message, bot);
-		bot.getDispatcher().registerListener(this);
 	}
 
 	public void run() {
@@ -39,10 +35,11 @@ public class BotGF extends Command {
 
 			String arg = null;
 			try {
-				arg = getAsOneArg().replaceAll("\\s", "").replace(".", "").replace("-", "").toLowerCase();
+				arg = getAsOneArg().replaceAll("\\s", "").replace(".", "").toLowerCase();
 			} catch (Exception e) {}
 
 			if (this.command.equals("tdoll")) {
+				arg = arg.replace("-", "");
 				boolean mod3 = false;
 				if (arg.length() >= 5) {
 					if (arg.substring(arg.length() - 4, arg.length()).toLowerCase().equals("mod3")) {
@@ -53,7 +50,7 @@ public class BotGF extends Command {
 				IMessage msg = sendMessage(displayTdollInfo(arg, mod3));
 				try {
 					JSONObject cgJson = getTdollData(arg).getJSONObject("cg");
-					CGScroll cgScroller = new TDollInfoEmbed(cmdMessage.getAuthor(), msg, botClient, cgJson, mod3);
+					CGScroll cgScroller = new TDollInfoEmbed(botClient, msg, cmdMessage.getAuthor(), cgJson, mod3);
 					cgScroller.start();
 				} catch (Exception e) {
 					e.printStackTrace();
@@ -61,7 +58,10 @@ public class BotGF extends Command {
 			} else if (this.command.equals("equip")) {
 				//sendMessage(displayEquipmentInfo(arg));
 			} else if (this.command.equals("timer")) {
-				JsonEmbed.embedAsWebhook(Main.getParameter("Webhook"), getTdollsFromTimer(arg));
+				arg = arg.replace("-", "");
+				JsonEmbed.embedAsWebhook(Main.getParameter("TimerWebhook"), getTdollsFromTimer(arg));
+			} else if (this.command.equals("map")) {
+				JsonEmbed.embedAsWebhook(Main.getParameter("MapWebhook"), displayMapInfo(arg));
 			}
 		}
 	}
@@ -94,8 +94,65 @@ public class BotGF extends Command {
 		return JsonEmbed.errorEmbedJson("**There are no T-Dolls with that Production time**");
 	}
 
-	private JSONObject getTdollData(String name) {
+	private JSONObject getMapData(String name) {
+		if (name.contains("operation")) {
+			name = name.replace("operation", "");
+		}
 
+		// Check if alias
+		try {
+			return mapDataJson.getJSONObject(mapDataJson.getJSONObject(name).getString("data"));
+		} catch (Exception e) {}
+
+		return mapDataJson.getJSONObject(name);
+	}
+
+	private JsonEmbed.EmbedJsonStringBuilder displayMapInfo(String name) {
+		// Parse given args
+		try {
+			int dashPos = name.indexOf("-");
+			String mapName = name.substring(0, dashPos - 1);
+			String map = name.substring(dashPos - 1, dashPos + 2);
+
+			// Build embed
+			JSONObject opData = getMapData(mapName);
+			JSONObject mapData = opData.getJSONObject(map);
+			String URL_HEADER = "https://cdn.discordapp.com/attachments/487029209114345502/";
+			JsonEmbed.EmbedJsonStringBuilder mapInfo = new JsonEmbed.EmbedJsonStringBuilder();
+
+			mapInfo.withTitle(mapData.getString("title"));
+			mapInfo.withDesc(opData.getString("name"));
+			mapInfo.withColor(Main.getParameter("EmbedSuccessColor"));
+			mapInfo.withImage(URL_HEADER + mapData.getString("map") + ".png");
+
+			// Display Day/Night battle
+			mapInfo.appendField("Type", mapData.getString("type") + " Battle", true);
+
+			// Display # of runs to complete
+			mapInfo.appendField("Runs to Clear", mapData.getString("runs"), true);
+
+			// Display clear objective
+			mapInfo.appendField("Objective", mapData.getString("objective"), false);
+
+			// Display map clear reward
+			mapInfo.appendField("Clear Reward", mapData.getString("clear_reward"), false);
+
+			// Display map limited drops
+			try {
+				mapInfo.appendField("Limited Drops", mapData.getString("limited_drops"), false);
+			} catch (Exception e) {}
+
+			return mapInfo;
+		} catch (Exception e) {
+			Main.displayError("Failed to embed map info");
+			e.printStackTrace();
+		}
+
+		// Map not found
+		return JsonEmbed.errorEmbedJson("**Map not found**");
+	}
+
+	private JSONObject getTdollData(String name) {
 		// Check if nickname
 		try {
 			return tdollDataJson.getJSONObject(tdollDataJson.getJSONObject(name).getString("data"));
@@ -362,7 +419,8 @@ public class BotGF extends Command {
 	private void loadJson() {
 		tdollDataJson = loadJsonFile("TdollData.json");
 		timerDataJson = loadJsonFile("ProductionTimers.json");
-		equipDataJson = loadJsonFile("EquipmentData.json");
+		//equipDataJson = loadJsonFile("EquipmentData.json");
+		mapDataJson = loadJsonFile("MapData.json");
 	}
 
 	private JSONObject loadJsonFile(String fileName) {
@@ -384,12 +442,14 @@ public class BotGF extends Command {
 	}
 
 	public String getHelp() {
-		String helpMessage = "";
 		if (this.command.equals("tdoll")) {
-			helpMessage += formatHelpMessage("t-doll", "tdoll (mod3)", "Displays CG and detailed information of that T-Doll ('s digimind upgrade)");
+			return BotHelp.formatHelpMessage("t-doll", "tdoll (mod3)", "Displays CG and detailed information of that T-Doll ('s digimind upgrade)");
 		} else if (this.command.equals("timer")) {
-			helpMessage += formatHelpMessage(this.command, "h:mm", "Displays the potential T-Dolls with that construction timer");
+			return BotHelp.formatHelpMessage(this.command, "h:mm", "Displays the potential T-Dolls with that construction timer");
+		} else if (this.command.equals("map")) {
+			return BotHelp.formatHelpMessage(this.command, "(event operation) map", "Displays information about that map with enemies that have fixed starting positions (enemies that have random starting locations or appear later will not be shown).");
 		}
-		return helpMessage;
+
+		return "";
 	}
 }
