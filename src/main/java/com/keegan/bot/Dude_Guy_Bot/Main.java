@@ -225,16 +225,34 @@ public class Main {
 
 		try {
 			displayMessage("Launching...");
+
+			// Testing mode
+			boolean testing = false;
+			for (int i = 0; i < args.length; i++) {
+				if (args[i].equals("-test") || args[i].equals("--test")) {
+					testing = true;
+				}
+			}
+
+			// Read settings file
 			loadSettings();
 
 			// Kill the launch if token or key was not specified in settings file
-			if (settings.get(TOKEN_KEY).equals("") || settings.get(CMD_KEY).equals("")) {
+			String botToken = settings.get(TOKEN_KEY);
+			String botTrigger = settings.get(CMD_KEY);
+			if (botToken.equals("") || botTrigger.equals("")) {
 				throw new Exception("Bot token or command trigger not found");
 			}
 
 			// Continue launching the bot
 			displayMessage("Token and command trigger found");
-			bot = new Instance(settings.get("Token"), settings.get(CMD_KEY));
+			if (testing) {
+				// Load test bot token and trigger instead
+				displayMessage("Launching in TEST mode");
+				botToken = settings.get("TestToken");;
+				botTrigger = settings.get("TestCommandTrigger");
+			}
+			bot = new Instance(botToken, botTrigger);
 
 			// Log the bot in
 			displayMessage("Logging in...");
