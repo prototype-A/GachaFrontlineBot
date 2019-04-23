@@ -79,6 +79,7 @@ public class Instance {
 		//guildCommands.put("equip", new BotGF("equip"));
 		//guildCommands.put("equipment", new BotGF("equip"));
 		guildCommands.put("exit", new BotSystem("exit"));
+		guildCommands.put("fairy", new BotGF("fairy"));
 		guildCommands.put("goto", new BotSystem("goto"));
 		guildCommands.put("help", new BotHelp("tochannel", guildCommands));
 		guildCommands.put("map", new BotGF("map"));

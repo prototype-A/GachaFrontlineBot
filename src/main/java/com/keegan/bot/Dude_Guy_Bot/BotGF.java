@@ -18,9 +18,12 @@ import java.util.Scanner;
 public class BotGF extends Command {
 
 	private static JSONObject tdollDataJson;
-	private static JSONObject timerDataJson;
+	private static JSONObject fairyDataJson;
+	private static JSONObject tdollTimerDataJson;
+	//private static JSONObject fairyTimerDataJson;
 	//private JSONObject equipDataJson;
 	private static JSONObject mapDataJson;
+	private final static String URL_HEADER = "https://cdn.discordapp.com/attachments/487029209114345502/";
 
 
 	public BotGF(String command) {
@@ -33,7 +36,7 @@ public class BotGF extends Command {
 		// Check for permissions
 		if (canIssueBotCommands()) {
 
-			String arg = null;
+			String arg = getAsOneArg().replaceAll("\\s", "").replace(".", "").toLowerCase();;
 			try {
 				arg = getAsOneArg().replaceAll("\\s", "").replace(".", "").toLowerCase();
 			} catch (Exception e) {}
@@ -55,10 +58,19 @@ public class BotGF extends Command {
 				} catch (Exception e) {
 					e.printStackTrace();
 				}
+			} else if (this.command.equals("fairy")) {
+				IMessage msg = sendMessage(displayFairyInfo(arg));
+				
+				try {
+					JSONObject cgJson = getFairyData(arg).getJSONObject("cg");
+					CGScroll cgScroller = new FairyInfoEmbed(botClient, msg, cmdMessage.getAuthor(), cgJson);
+					cgScroller.start();
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
 			} else if (this.command.equals("equip")) {
 				//sendMessage(displayEquipmentInfo(arg));
 			} else if (this.command.equals("timer")) {
-				arg = arg.replace("-", "");
 				JsonEmbed.embedAsWebhook(Main.getParameter("TimerWebhook"), getTdollsFromTimer(arg));
 			} else if (this.command.equals("map")) {
 				JsonEmbed.embedAsWebhook(Main.getParameter("MapWebhook"), displayMapInfo(arg));
@@ -87,7 +99,7 @@ public class BotGF extends Command {
 
 		// Get possible T-dolls
 		try {
-			return JsonEmbed.successEmbedJson("**Possible T-Dolls:** " + timerDataJson.getString(timer));
+			return JsonEmbed.successEmbedJson("**Possible T-Dolls:** " + tdollTimerDataJson.getString(timer));
 		} catch (Exception e) {}
 
 		// No T-dolls with timer
@@ -150,6 +162,15 @@ public class BotGF extends Command {
 
 		// Map not found
 		return JsonEmbed.errorEmbedJson("**Map not found**");
+	}
+
+	private JSONObject getFairyData(String name) {
+		// Check if nickname
+		try {
+			return fairyDataJson.getJSONObject(fairyDataJson.getJSONObject(name).getString("data"));
+		} catch (Exception e) {}
+
+		return fairyDataJson.getJSONObject(name);
 	}
 
 	private JSONObject getTdollData(String name) {
@@ -332,6 +353,7 @@ public class BotGF extends Command {
 			infoPanel.withFooterText("Default 1/2");
 		}
 
+
 		return infoPanel.build();
 	}
 
@@ -416,9 +438,111 @@ public class BotGF extends Command {
 	}
 	*/
 
+	private EmbedObject displayFairyInfo(String name) {
+
+		EmbedBuilder infoPanel = new EmbedBuilder();
+		JSONObject data = null;
+		JSONObject fairyData = null;
+		JSONObject fairyStats = null;
+		JSONObject fairySkill = null;
+		JSONObject fairyCg = null;
+
+		// Get JSON data
+		try {
+			data = getFairyData(name);
+			fairyData = data.getJSONObject("data");
+			fairyStats = data.getJSONObject("stats");
+			fairySkill = data.getJSONObject("skill");
+			fairyCg = data.getJSONObject("cg");
+		} catch (Exception e) {
+			return JsonEmbed.errorEmbed("That Technical Fairy's data was not found in the database");
+		}
+
+		// Title (Fairy Name)
+		String fairyName = fairyData.getString("name");
+		infoPanel.withTitle(fairyName);
+
+		// Link title to gfwiki page
+		fairyName = fairyName.replace(" ", "_");
+		infoPanel.withUrl("https://en.gfwiki.com/wiki/" + fairyName);
+
+		// Description (Battle/Strategy-Type)
+		String fairyType = fairyData.getString("type");
+		infoPanel.withDesc(fairyData.getString("alt_name") + "\n" + fairyType + "-Type" + ((fairyData.getBoolean("extra")) ? " EXTRA ": " ") +  "Technical Fairy");
+
+		// Thumbnail (Apprentice chibi as top right square icon)
+		infoPanel.withThumbnail(URL_HEADER + fairyCg.getString("11") + ".png");
+
+		// Change embed bar color
+		int color = 16729344;	// Battle ("Orange Red")
+		if (fairyType.equals("Strategy")) {
+			// Strategy ("Corn Flower Blue")
+			color = 6591981;
+		}
+		infoPanel.withColor(color);
+
+		// Stats
+		boolean left = true;
+		String fairyStatInfo = "";
+		String[] stat = { "dmg", "crit_dmg", "acc", "eva", "armor" };
+		String[] statName = { "Damage:\t\t", "Crit. Dmg:\t", "Accuracy:\t", "Evasion:\t", "Armor:\t\t" };
+		for (int i = 0; i < 5; i++) {
+			int statMin = fairyStats.getInt(stat[i]);
+			int statMax = fairyStats.getInt(stat[i] + "_max");
+			if (left) {
+				// Left column
+				fairyStatInfo += "**" + statName[i] + "**" + statMin + "% → " + statMax + "%\t";
+			} else {
+				// Right column
+				fairyStatInfo += "**" + statName[i] + "**" + statMin + "% → " + statMax + "%\n";
+			}
+			left = !left;
+		}
+		infoPanel.appendField("Stats", fairyStatInfo, false);
+
+		// Skill
+		String skillName = "Skill (Lv.10) - " + fairySkill.getString("name");
+		infoPanel.appendField(skillName, fairySkill.getString("effect"), false);
+
+		// Skill cost
+		infoPanel.appendField("Skill Cost", "" + fairySkill.getInt("cost"), true);
+
+		// SKill Cooldown
+		int skillCd = fairySkill.getInt("cd");
+		String fairySkillCooldown = "None";
+		if (skillCd > 0) {
+			fairySkillCooldown = skillCd + " Turns";
+		}
+		infoPanel.appendField("Skill Cooldown", fairySkillCooldown, true);
+
+		// Has Live2D
+		infoPanel.appendField("Live2D", (fairyCg.getBoolean("live2d")) ? "Yes" : "No", false);
+
+		// Production time
+		if (fairyData.getBoolean("craftable")) {
+			infoPanel.appendField("Production Time", fairyData.getString("craft_time"), false);
+		}
+
+		// Reward reason
+		if (fairyData.getBoolean("reward")) {
+			infoPanel.appendField("Reward From", fairyData.getString("reward_reason"), false);
+		}
+
+		// Image of Fairy (default cg)
+		infoPanel.withImage(URL_HEADER + fairyCg.getString("1") + ".png");
+
+		// Display star level as footer text
+		infoPanel.withFooterText("* 1/3");
+
+
+		return infoPanel.build();
+	}
+
 	private void loadJson() {
 		tdollDataJson = loadJsonFile("TdollData.json");
-		timerDataJson = loadJsonFile("ProductionTimers.json");
+		fairyDataJson = loadJsonFile("FairyData.json");
+		tdollTimerDataJson = loadJsonFile("TdollTimers.json");
+		//fairyTimerDataJson = loadJsonFile("FairyTimers.json");
 		//equipDataJson = loadJsonFile("EquipmentData.json");
 		mapDataJson = loadJsonFile("MapData.json");
 	}
@@ -444,6 +568,8 @@ public class BotGF extends Command {
 	public String getHelp() {
 		if (this.command.equals("tdoll")) {
 			return BotHelp.formatHelpMessage("t-doll", "tdoll (mod3)", "Displays CG and detailed information of that T-Doll ('s digimind upgrade)");
+		} else if (this.command.equals("fairy")) {
+			return BotHelp.formatHelpMessage(this.command, "fairy", "Displays CG and detailed information of that Technical Fairy (Data Incomplete)");
 		} else if (this.command.equals("timer")) {
 			return BotHelp.formatHelpMessage(this.command, "h:mm", "Displays the potential T-Dolls with that construction timer");
 		} else if (this.command.equals("map")) {
