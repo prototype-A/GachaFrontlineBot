@@ -20,7 +20,7 @@ public class BotGF extends Command {
 	private static JSONObject tdollDataJson;
 	private static JSONObject fairyDataJson;
 	private static JSONObject tdollTimerDataJson;
-	//private static JSONObject fairyTimerDataJson;
+	//private static JSONObject equipTimerDataJson;
 	//private JSONObject equipDataJson;
 	private static JSONObject mapDataJson;
 	private final static String URL_HEADER = "https://cdn.discordapp.com/attachments/487029209114345502/";
@@ -463,8 +463,13 @@ public class BotGF extends Command {
 		infoPanel.withTitle(fairyName);
 
 		// Link title to gfwiki page
-		fairyName = fairyName.replace(" ", "_");
-		infoPanel.withUrl("https://en.gfwiki.com/wiki/" + fairyName);
+		String linkName = fairyName;
+		try {
+			// Article posted as alternate name in gfwiki
+			linkName = fairyData.getString("wiki_name");
+		} catch (Exception e) {}
+		linkName = linkName.replace(" ", "_").replace("&", "%26");
+		infoPanel.withUrl("https://en.gfwiki.com/wiki/" + linkName);
 
 		// Description (Battle/Strategy-Type)
 		String fairyType = fairyData.getString("type");
@@ -487,8 +492,8 @@ public class BotGF extends Command {
 		String[] stat = { "dmg", "crit_dmg", "acc", "eva", "armor" };
 		String[] statName = { "Damage:\t\t", "Crit. Dmg:\t", "Accuracy:\t", "Evasion:\t", "Armor:\t\t" };
 		for (int i = 0; i < 5; i++) {
-			int statMin = fairyStats.getInt(stat[i]);
-			int statMax = fairyStats.getInt(stat[i] + "_max");
+			double statMin = fairyStats.getDouble(stat[i]);
+			double statMax = fairyStats.getDouble(stat[i] + "_max");
 			if (left) {
 				// Left column
 				fairyStatInfo += "**" + statName[i] + "**" + statMin + "% → " + statMax + "%\t";
@@ -520,7 +525,7 @@ public class BotGF extends Command {
 
 		// Production time
 		if (fairyData.getBoolean("craftable")) {
-			infoPanel.appendField("Production Time", fairyData.getString("craft_time"), false);
+			infoPanel.appendField("Production Time", fairyData.getString("production_time"), false);
 		}
 
 		// Reward reason
@@ -542,7 +547,7 @@ public class BotGF extends Command {
 		tdollDataJson = loadJsonFile("TdollData.json");
 		fairyDataJson = loadJsonFile("FairyData.json");
 		tdollTimerDataJson = loadJsonFile("TdollTimers.json");
-		//fairyTimerDataJson = loadJsonFile("FairyTimers.json");
+		//equipTimerDataJson = loadJsonFile("EquipTimers.json");
 		//equipDataJson = loadJsonFile("EquipmentData.json");
 		mapDataJson = loadJsonFile("MapData.json");
 	}
@@ -569,7 +574,7 @@ public class BotGF extends Command {
 		if (this.command.equals("tdoll")) {
 			return BotHelp.formatHelpMessage("t-doll", "tdoll (mod3)", "Displays CG and detailed information of that T-Doll ('s digimind upgrade)");
 		} else if (this.command.equals("fairy")) {
-			return BotHelp.formatHelpMessage(this.command, "fairy", "Displays CG and detailed information of that Technical Fairy (Data Incomplete)");
+			return BotHelp.formatHelpMessage(this.command, "fairy", "Displays CG and detailed information of that Technical Fairy");
 		} else if (this.command.equals("timer")) {
 			return BotHelp.formatHelpMessage(this.command, "h:mm", "Displays the potential T-Dolls with that construction timer");
 		} else if (this.command.equals("map")) {
