@@ -63,7 +63,11 @@ public class Main {
 	 * @return The value of the setting
 	 */
 	public static String getParameter(String param) {
-		return settings.get(param);
+		String param = settings.get(param);
+		if (param == null) {
+			param = readServerParam(param);
+		}
+		return param;
 	}
 
 	/**
@@ -86,7 +90,7 @@ public class Main {
 	}
 
 	public static Map<String, String> readServerSetting(String serverID, String setting) {
-		String file = "data/servers/" + serverID;
+		String file = "data/Servers/" + serverID + "/bot.settings";
 		try {
 			settings = new HashMap<String, String>();
 			Scanner reader = new Scanner(new File(file));
@@ -95,15 +99,16 @@ public class Main {
 				//putSetting(reader.nextLine());
 			}
 			reader.close();
-		} catch (FileNotFoundException e) {
-			
-		}
+		} catch (FileNotFoundException e1) {
+
+		} catch (Exception e2) {}
+		
 
 		return null;
 	}
 
 	public static void writeServerSetting(String serverID, String setting, String value) {
-		String file = "data/servers/" + serverID;
+		String file = "data/Servers/" + serverID + "/bot.settings";
 		try {
 			File settingsFile = new File(file);
 			Scanner reader = new Scanner(settingsFile);

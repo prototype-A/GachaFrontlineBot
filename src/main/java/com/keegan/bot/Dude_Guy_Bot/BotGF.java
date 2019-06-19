@@ -20,7 +20,7 @@ public class BotGF extends Command {
 	private static JSONObject tdollDataJson;
 	private static JSONObject fairyDataJson;
 	private static JSONObject tdollTimerDataJson;
-	//private static JSONObject equipTimerDataJson;
+	private static JSONObject equipTimerDataJson;
 	//private JSONObject equipDataJson;
 	private static JSONObject mapDataJson;
 	private final static String URL_HEADER = "https://cdn.discordapp.com/attachments/487029209114345502/";
@@ -71,15 +71,18 @@ public class BotGF extends Command {
 			} else if (this.command.equals("equip")) {
 				//sendMessage(displayEquipmentInfo(arg));
 			} else if (this.command.equals("timer")) {
-				JsonEmbed.embedAsWebhook(Main.getParameter("TimerWebhook"), getTdollsFromTimer(arg));
+				JsonEmbed.embedAsWebhook(Main.getParameter("TimerWebhook"), embedEquipmentTdollsFromTimer(arg));
+			} else if (this.command.equals("constructiontimer")) {
+				JsonEmbed.embedAsWebhook(Main.getParameter("TimerWebhook"), embedTdollsFromTimer(arg));
+	 		} else if (this.command.equals("productiontimer")) {
+				JsonEmbed.embedAsWebhook(Main.getParameter("TimerWebhook"), embedEquipmentFromTimer(arg));
 			} else if (this.command.equals("map")) {
 				JsonEmbed.embedAsWebhook(Main.getParameter("MapWebhook"), displayMapInfo(arg));
 			}
 		}
 	}
 
-	private JsonEmbed.EmbedJsonStringBuilder getTdollsFromTimer(String timer) {
-
+	private String formatTimer(String timer) {
 		// Parse the timer given
 		int colonCount = 0;
 		for (int i = 0; i < timer.length(); i++) {
@@ -87,23 +90,98 @@ public class BotGF extends Command {
 				colonCount++;
 			}
 		}
-		if (colonCount == 0) {
-			// e.g. "215"
-			timer = timer.charAt(0) + ":" + timer.substring(1) + ":00";
-		} else if (colonCount == 1) {
-			// e.g. "2:15"
-			timer += ":00";
-		} else if (colonCount > 2) {
+
+		try {
+			if (colonCount == 0) {
+				// e.g. "215"
+				timer = timer.charAt(0) + ":" + timer.substring(1) + ":00";
+			} else if (colonCount == 1) {
+				// e.g. "2:15"
+				timer += ":00";
+			} else if (colonCount > 2) {
+				throw new Exception();
+			}
+		} catch (Exception e) {
+			return null;
+		}
+
+		return timer;
+	}
+
+	private JsonEmbed.EmbedJsonStringBuilder embedEquipmentTdollsFromTimer(String timer) {
+
+		timer = formatTimer(timer);
+
+		if (timer == null) {
 			return JsonEmbed.errorEmbedJson("Invalid timer");
 		}
 
+		String tdolls = getTdollsFromTimer(timer);
+		String equips = getEquipsFromTimer(timer);
+
+		// No T-Dolls or Equipment with that timer
+		if (tdolls == null && equips == null) {
+			return JsonEmbed.errorEmbedJson("**There are no T-Dolls or equipment with that timer**");
+		}
+		if (tdolls == null) {
+			tdolls = "None";
+		} else if (equips == null) {
+			equips = "None";
+		}
+		return new JsonEmbed.EmbedJsonStringBuilder()
+			.withTitle("T-Dolls:")
+			.withDesc(tdolls.replace("**Possible T-Dolls:** ", ""))
+			.withColor(Main.getParameter("EmbedSuccessColor"))
+			.appendField("Equipment:", equips.replace("**Possible Equipment:** ", ""), false);
+	}
+
+	private JsonEmbed.EmbedJsonStringBuilder embedTdollsFromTimer(String timer) {
+
+		timer = formatTimer(timer);
+
+		if (timer == null) {
+			return JsonEmbed.errorEmbedJson("Invalid timer");
+		}
+
+		String tdolls = getTdollsFromTimer(timer);
+		if (tdolls == null) {
+			return JsonEmbed.errorEmbedJson("**There are no T-Dolls with that construction time**");
+		}
+		return JsonEmbed.successEmbedJson(tdolls);
+	}
+
+	private JsonEmbed.EmbedJsonStringBuilder embedEquipmentFromTimer(String timer) {
+		timer = formatTimer(timer);
+
+		if (timer == null) {
+			return JsonEmbed.errorEmbedJson("Invalid timer");
+		}
+
+		String equips = getEquipsFromTimer(timer);
+		if (equips == null) {
+			return JsonEmbed.errorEmbedJson("**There are no equipment with that production time**");
+		}
+		return JsonEmbed.successEmbedJson(equips);
+	}
+
+	private String getTdollsFromTimer(String timer) {
 		// Get possible T-dolls
 		try {
-			return JsonEmbed.successEmbedJson("**Possible T-Dolls:** " + tdollTimerDataJson.getString(timer));
+			return "**Possible T-Dolls:** " + tdollTimerDataJson.getString(timer);
 		} catch (Exception e) {}
 
 		// No T-dolls with timer
-		return JsonEmbed.errorEmbedJson("**There are no T-Dolls with that Production time**");
+		return null;
+	}
+
+	private String getEquipsFromTimer(String timer) {
+		// Get possible equipment
+		try {
+			return "**Possible Equipment:** " + equipTimerDataJson.getString(timer);
+		} catch (Exception e) {}
+
+		// No equipment with timer
+		return null;
 	}
 
 	private JSONObject getMapData(String name) {
@@ -547,7 +625,7 @@ public class BotGF extends Command {
 		tdollDataJson = loadJsonFile("TdollData.json");
 		fairyDataJson = loadJsonFile("FairyData.json");
 		tdollTimerDataJson = loadJsonFile("TdollTimers.json");
-		//equipTimerDataJson = loadJsonFile("EquipTimers.json");
+		equipTimerDataJson = loadJsonFile("EquipTimers.json");
 		//equipDataJson = loadJsonFile("EquipmentData.json");
 		mapDataJson = loadJsonFile("MapData.json");
 	}
@@ -576,7 +654,11 @@ public class BotGF extends Command {
 		} else if (this.command.equals("fairy")) {
 			return BotHelp.formatHelpMessage(this.command, "fairy", "Displays CG and detailed information of that Technical Fairy");
 		} else if (this.command.equals("timer")) {
+			return BotHelp.formatHelpMessage(this.command, "h:mm", "Displays the potential T-Dolls and Equipment/Fairies with that construction/production timer");
+		} else if (this.command.equals("constructiontimer")) {
 			return BotHelp.formatHelpMessage(this.command, "h:mm", "Displays the potential T-Dolls with that construction timer");
+		} else if (this.command.equals("productiontimer")) {
+			return BotHelp.formatHelpMessage(this.command, "h:mm", "Displays the potential Equipment/Fairies with that production timer");
 		} else if (this.command.equals("map")) {
 			return BotHelp.formatHelpMessage(this.command, "(event operation) map", "Displays information about that map with enemies that have fixed starting positions (enemies that have random starting locations or appear later will not be shown).");
 		}

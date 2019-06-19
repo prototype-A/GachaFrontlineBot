@@ -40,7 +40,10 @@ public abstract class CGScroll extends EmbedMessage {
 			while (LocalTime.now().isBefore(END_TIME)) {
 				try {
 					this.sleep(1000);
-				} catch (InterruptedException e) {}
+				} catch (InterruptedException e) {
+					Main.displayWarning("CG Scroller sleep interrupted");
+					e.printStackTrace();
+				}
 			}
 			// After time limit
 			try {
@@ -49,8 +52,14 @@ public abstract class CGScroll extends EmbedMessage {
 			} catch (RateLimitException e1) {
 				try {
 					this.sleep(e1.getRetryDelay() + 1);
-				} catch (InterruptedException e2) {}
-			} catch (InterruptedException e3) {}
+				} catch (InterruptedException e2) {
+					Main.displayWarning("Failed to join() CG Scroller twice");
+					e2.printStackTrace();
+				}
+			} catch (InterruptedException e3) {
+				Main.displayWarning("Failed to join() CG Scroller");
+				e3.printStackTrace();
+			}
 		});
 	}
 
@@ -74,11 +83,11 @@ public abstract class CGScroll extends EmbedMessage {
 		newEmbed.withUrl(getNewUrl(oldEmbed));
 		newEmbed.withDesc(getNewDesc(oldEmbed));
 		newEmbed.withColor(getNewColor(oldEmbed));
-		newEmbed.withThumbnail(getNewThumbnailUrl(oldEmbed));
-
 		getNewEmbedFields(oldEmbed, newEmbed);
 
 		String[] newImage = (next) ? getNextImage() : getPrevImage();
+		
+		newEmbed.withThumbnail(getNewThumbnailUrl(oldEmbed));
 
 		newEmbed.withFooterText(getNewFooterText(newImage));
 		newEmbed.withImage(getNewImageUrl(newImage));

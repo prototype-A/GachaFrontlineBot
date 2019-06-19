@@ -76,6 +76,7 @@ public class Instance {
 	private void initGuildCommands() {
 		guildCommands = new HashMap<String, Command>();
 		guildCommands.put("avatar", new BotMisc("avatar"));
+		guildCommands.put("craft", new BotGF("constructiontimer"));
 		//guildCommands.put("equip", new BotGF("equip"));
 		//guildCommands.put("equipment", new BotGF("equip"));
 		guildCommands.put("exit", new BotSystem("exit"));
@@ -85,6 +86,7 @@ public class Instance {
 		guildCommands.put("map", new BotGF("map"));
 		guildCommands.put("player", new BotAudio("player"));
 		guildCommands.put("pmhelp", new BotHelp("topm", guildCommands));
+		guildCommands.put("prod", new BotGF("productiontimer"));
 		guildCommands.put("queue", new BotAudio("queue"));
 		guildCommands.put("quote", new BotMisc("quote"));
 		guildCommands.put("tdoll", new BotGF("tdoll"));
