@@ -63,9 +63,9 @@ public class Main {
 	 * @return The value of the setting
 	 */
 	public static String getParameter(String param) {
-		String param = settings.get(param);
-		if (param == null) {
-			param = readServerParam(param);
+		String botParam = settings.get(param);
+		if (botParam == null) {
+			//param = readServerSetting(param);
 		}
 		return param;
 	}
@@ -253,7 +253,7 @@ public class Main {
 			displayMessage("Token and command trigger found");
 			if (testing) {
 				// Load test bot token and trigger instead
-				displayMessage("Launching in TEST mode");
+				displayWarning("Launching in TEST mode");
 				botToken = settings.get("TestToken");;
 				botTrigger = settings.get("TestCommandTrigger");
 			}

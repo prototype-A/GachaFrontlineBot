@@ -116,6 +116,10 @@ public class JsonEmbed {
 			return this;
 		}
 
+		public EmbedJsonStringBuilder appendField(String title, String content) {
+			return appendField(title, content, false);
+		}
+
 		public EmbedJsonStringBuilder appendField(String title, String content, boolean inline) {
 			fieldsJson += "{\"name\":\"" + title + "\",\"value\":\"" + 
 							content + "\",\"inline\":" + 

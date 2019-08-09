@@ -84,6 +84,7 @@ public class Instance {
 		guildCommands.put("goto", new BotSystem("goto"));
 		guildCommands.put("help", new BotHelp("tochannel", guildCommands));
 		guildCommands.put("map", new BotGF("map"));
+		guildCommands.put("mix", new BotGF("mix"));
 		guildCommands.put("player", new BotAudio("player"));
 		guildCommands.put("pmhelp", new BotHelp("topm", guildCommands));
 		guildCommands.put("prod", new BotGF("productiontimer"));

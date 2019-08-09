@@ -12,6 +12,7 @@ import org.json.simple.parser.JSONParser;
 
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.util.Random;
 import java.util.Scanner;
 
 
@@ -36,7 +37,7 @@ public class BotGF extends Command {
 		// Check for permissions
 		if (canIssueBotCommands()) {
 
-			String arg = getAsOneArg().replaceAll("\\s", "").replace(".", "").toLowerCase();;
+			String arg = "";
 			try {
 				arg = getAsOneArg().replaceAll("\\s", "").replace(".", "").toLowerCase();
 			} catch (Exception e) {}
@@ -78,6 +79,8 @@ public class BotGF extends Command {
 				JsonEmbed.embedAsWebhook(Main.getParameter("TimerWebhook"), embedEquipmentFromTimer(arg));
 			} else if (this.command.equals("map")) {
 				JsonEmbed.embedAsWebhook(Main.getParameter("MapWebhook"), displayMapInfo(arg));
+			} else if (this.command.equals("mix")) {
+				JsonEmbed.embedAsWebhook(Main.getParameter("BartenderWebhook"), displayBartendingInfo());
 			}
 		}
 	}
@@ -619,6 +622,50 @@ public class BotGF extends Command {
 
 
 		return infoPanel.build();
+	}
+
+	private JsonEmbed.EmbedJsonStringBuilder displayBartendingInfo() {
+
+		String[] titles = { "Va-11 Hall-A", "VA-11 HALL-A", "Menu", "Drinks" };
+		String[] subTitles = { "Cyberpunk Bartending Action", "Waifu Bartending Action", "Time to mix drinks and change lives" };
+		JsonEmbed.EmbedJsonStringBuilder mixingInfo = new JsonEmbed.EmbedJsonStringBuilder();
+		Random rngesus = new Random();
+
+		// Title
+		mixingInfo.withTitle(titles[rngesus.nextInt(titles.length)]);
+
+		// Random sub-title
+		mixingInfo.withDesc(subTitles[rngesus.nextInt(subTitles.length)]);
+
+		// Jill portrait
+		mixingInfo.withThumbnail("https://cdn.discordapp.com/attachments/487029209114345502/609215082462838785/Jill_S.png");
+
+
+		mixingInfo.appendField("╔∷∷∷∷∷∷∷∷♪♪   Menu   ♪♪∷∷∷∷∷∷∷∷╗", "asdf");
+		// Big Beer
+		mixingInfo.appendField("Big Beer", "Flanergide + Bronson Ext + Karmotrine 3");
+
+		// Brandtini
+		mixingInfo.appendField("Brandtini", "Adelhyde 1 + Adelhyde 2 + Pwd Delta");
+
+		// Piano Woman
+		mixingInfo.appendField("Piano Woman", "Adelhyde 1 + Bronson Ext + Karmotrine 3");
+
+		// Moonblast
+		mixingInfo.appendField("Moonblast", "Adelhyde 1 + Adelhyde 2 + Karmotrine 3");
+
+		// Bleeding Jane
+		mixingInfo.appendField("Bleeding Jane", "Flanergide + Bronson Ext + Pwd Delta");
+
+		// Fringe Weaver
+		mixingInfo.appendField("Fringe Weaver", "Karmotrine 1 + Karmotrine 2 + Karmotrine 3");
+
+		// Sugar Rush
+		mixingInfo.appendField("Sugar Rush", "Not enough mixers equipped (Default)");
+		mixingInfo.appendField("╚∷∷∷∷∷∷∷♪♪ Night Night ♪♪∷∷∷∷∷∷╝", "jkl;");
+
+
+		return mixingInfo;
 	}
 
 	private void loadJson() {
