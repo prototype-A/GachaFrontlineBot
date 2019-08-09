@@ -97,7 +97,7 @@ public class JsonEmbed {
 		}
 
 		public EmbedJsonStringBuilder withThumbnail(String url) {
-			thumbnailJson = "\"thumbnail\":{\"url\":\"" + url + ".png\"},";
+			thumbnailJson = "\"thumbnail\":{\"url\":\"" + url + "\"},";
 			return this;
 		}
 

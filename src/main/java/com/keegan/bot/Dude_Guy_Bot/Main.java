@@ -65,9 +65,9 @@ public class Main {
 	public static String getParameter(String param) {
 		String botParam = settings.get(param);
 		if (botParam == null) {
-			//param = readServerSetting(param);
+			//botParam = readServerSetting(param);
 		}
-		return param;
+		return botParam;
 	}
 
 	/**

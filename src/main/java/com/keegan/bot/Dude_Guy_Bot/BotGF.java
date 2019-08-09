@@ -626,43 +626,46 @@ public class BotGF extends Command {
 
 	private JsonEmbed.EmbedJsonStringBuilder displayBartendingInfo() {
 
-		String[] titles = { "Va-11 Hall-A", "VA-11 HALL-A", "Menu", "Drinks" };
-		String[] subTitles = { "Cyberpunk Bartending Action", "Waifu Bartending Action", "Time to mix drinks and change lives" };
+		String[] titles = { "Va-11 Hall-A", "VA-11 HALL-A" };
+		String[] subTitles = { "Cyberpunk Bartending Action", "Waifu Bartending Action", "Time to mix drinks and change lives", "What will you have?" };
 		JsonEmbed.EmbedJsonStringBuilder mixingInfo = new JsonEmbed.EmbedJsonStringBuilder();
 		Random rngesus = new Random();
 
 		// Title
-		mixingInfo.withTitle(titles[rngesus.nextInt(titles.length)]);
+		mixingInfo.withTitle("**╔∷∷∷∷∷∷∷∷♪♪   Menu   ♪♪∷∷∷∷∷∷∷∷╗**");
 
 		// Random sub-title
 		mixingInfo.withDesc(subTitles[rngesus.nextInt(subTitles.length)]);
 
+		// Embed bar color
+		mixingInfo.withColor("4784304");
+
 		// Jill portrait
 		mixingInfo.withThumbnail("https://cdn.discordapp.com/attachments/487029209114345502/609215082462838785/Jill_S.png");
 
-
-		mixingInfo.appendField("╔∷∷∷∷∷∷∷∷♪♪   Menu   ♪♪∷∷∷∷∷∷∷∷╗", "asdf");
 		// Big Beer
-		mixingInfo.appendField("Big Beer", "Flanergide + Bronson Ext + Karmotrine 3");
+		mixingInfo.appendField("[Big Beer]", "Flanergide + Bronson Ext + Karmotrine 3");
 
 		// Brandtini
-		mixingInfo.appendField("Brandtini", "Adelhyde 1 + Adelhyde 2 + Pwd Delta");
+		mixingInfo.appendField("[Brandtini]", "Adelhyde 1 + Adelhyde 2 + Pwd Delta");
 
 		// Piano Woman
-		mixingInfo.appendField("Piano Woman", "Adelhyde 1 + Bronson Ext + Karmotrine 3");
+		mixingInfo.appendField("[Piano Woman]", "Adelhyde 1 + Bronson Ext + Karmotrine 3");
 
 		// Moonblast
-		mixingInfo.appendField("Moonblast", "Adelhyde 1 + Adelhyde 2 + Karmotrine 3");
+		mixingInfo.appendField("[Moonblast]", "Adelhyde 1 + Adelhyde 2 + Karmotrine 3");
 
 		// Bleeding Jane
-		mixingInfo.appendField("Bleeding Jane", "Flanergide + Bronson Ext + Pwd Delta");
+		mixingInfo.appendField("[Bleeding Jane]", "Flanergide + Bronson Ext + Pwd Delta");
 
 		// Fringe Weaver
-		mixingInfo.appendField("Fringe Weaver", "Karmotrine 1 + Karmotrine 2 + Karmotrine 3");
+		mixingInfo.appendField("[Fringe Weaver]", "Karmotrine 1 + Karmotrine 2 + Karmotrine 3");
 
 		// Sugar Rush
-		mixingInfo.appendField("Sugar Rush", "Not enough mixers equipped (Default)");
-		mixingInfo.appendField("╚∷∷∷∷∷∷∷♪♪ Night Night ♪♪∷∷∷∷∷∷╝", "jkl;");
+		mixingInfo.appendField("[Sugar Rush]", "None of the above (Default)");
+
+		// Footer
+		mixingInfo.appendField("**╚∷∷∷∷∷∷∷♪♪ Night Night ♪♪∷∷∷∷∷∷╝**", "B.T.C.");
 
 
 		return mixingInfo;
