@@ -1,4 +1,4 @@
-package com.keegan.bot.Dude_Guy_Bot;
+package com.prototypeA.discordbot.GachaFrontline_Bot;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -228,14 +228,16 @@ public class Main {
 	 */
 	public static void main(String[] args) {
 
-		try {
-			displayMessage("Launching...");
+		displayMessage("Launching...");
 
+		try {
 			// Testing mode
-			boolean testing = false;
+			boolean testMode = false;
 			for (int i = 0; i < args.length; i++) {
-				if (args[i].equals("-test") || args[i].equals("--test")) {
-					testing = true;
+				if (args[i].equals("-test") ||
+					args[i].equals("-t") ||
+					args[i].equals("--test") ) {
+					testMode = true;
 				}
 			}
 
@@ -250,18 +252,14 @@ public class Main {
 			}
 
 			// Continue launching the bot
-			displayMessage("Token and command trigger found");
-			if (testing) {
+			displayMessage("Token and command trigger found. Logging in...");
+			if (testMode) {
 				// Load test bot token and trigger instead
 				displayWarning("Launching in TEST mode");
 				botToken = settings.get("TestToken");;
 				botTrigger = settings.get("TestCommandTrigger");
 			}
 			bot = new Instance(botToken, botTrigger);
-
-			// Log the bot in
-			displayMessage("Logging in...");
-			bot.login();
 		} catch (Exception e) {
 			displayError("Failed to launch bot", e);
 		}
