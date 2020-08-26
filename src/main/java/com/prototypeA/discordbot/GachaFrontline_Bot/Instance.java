@@ -8,6 +8,8 @@ import discord4j.core.event.domain.lifecycle.ReconnectEvent;
 import discord4j.core.event.domain.lifecycle.ReconnectFailEvent;
 import discord4j.core.event.domain.lifecycle.ReconnectStartEvent;
 import discord4j.core.event.domain.message.MessageCreateEvent;
+import discord4j.core.object.entity.channel.Channel;
+import discord4j.core.object.entity.channel.MessageChannel;
 import discord4j.core.object.entity.Message;
 
 import java.io.File;
@@ -28,8 +30,8 @@ public class Instance {
 	private final String CMD_TRIGGER; // The symbol(s) to invoke bot commands
 	private final DiscordClient client;
 	private final GatewayDiscordClient gateway;
-	//private static HashMap<String, Command> pmCommands;
-	//private static HashMap<String, Command> guildCommands;
+	private static HashMap<String, Command> pmCommands;
+	private static HashMap<String, Command> guildCommands;
 
 
 	public Instance(String token, String trigger) {
@@ -58,7 +60,34 @@ public class Instance {
 
 		gateway.on(MessageCreateEvent.class).subscribe(event -> {
 			final Message message = event.getMessage();
-			
+			String messageContents = message.getContent();
+
+			// Check if user tried to issue a bot command
+			if (messageContents.startsWith(CMD_TRIGGER)) {
+				// Remove command symbol and validate issued bot command
+				String command = getCommand(messageContents);
+				messageContents = messageContents.substring(CMD_TRIGGER.length());
+				MessageChannel channel = event.getMessage()
+									.getChannel()
+									.block();
+
+				Thread commandThread = null;
+
+				// Check if PM command
+				if (channel.getType() == Channel.Type.DM && pmCommands.containsKey(command)) {
+					pmCommands.get(command).init(message, gateway);
+					commandThread = new Thread(pmCommands.get(command));
+				}
+				// Check if valid guild command
+				else if (guildCommands.containsKey(command) && channel != null) {
+					guildCommands.get(command).init(message, gateway);
+					commandThread = new Thread(guildCommands.get(command));
+				}
+
+				if (commandThread != null) {
+					commandThread.start();
+				}
+			}
 		});
 
 		gateway.on(DisconnectEvent.class).subscribe(event -> {
@@ -94,30 +123,31 @@ public class Instance {
 	 */
 	private void initCommands() {
 		initGuildCommands();
-		initPmCommands();
+		//initPmCommands();
 	}
 
 	/**
 	 * Private message commands
-	 */
+	 *
 	private void initPmCommands() {
-		//pmCommands = new HashMap<String, Command>();
-		//pmCommands.put("help", new BotHelp("tochannel", guildCommands));
+		pmCommands = new HashMap<String, Command>();
+		pmCommands.put("help", new BotHelp("to-dm", guildCommands));
   	}
+	*/
 
 	/**
 	 * Guild (Server) commands
 	 */
 	private void initGuildCommands() {
-		//guildCommands = new HashMap<String, Command>();
-		//guildCommands.put("avatar", new BotMisc("avatar"));
+		guildCommands = new HashMap<String, Command>();
+		guildCommands.put("avatar", new BotMisc("avatar"));
 		//guildCommands.put("exit", new BotSystem("exit"));
 		//guildCommands.put("goto", new BotSystem("goto"));
-		//guildCommands.put("help", new BotHelp("tochannel", guildCommands));
+		guildCommands.put("help", new BotHelp("to-channel", guildCommands));
 		//guildCommands.put("player", new BotAudio("player"));
-		//guildCommands.put("pmhelp", new BotHelp("topm", guildCommands));
+		//guildCommands.put("pmhelp", new BotHelp("to-dm", guildCommands));
 		//guildCommands.put("queue", new BotAudio("queue"));
-		//guildCommands.put("quote", new BotMisc("quote"));
+		guildCommands.put("quote", new BotMisc("quote"));
 
 		// Girls Frontline
 		//HashMap<String, Command> gflCommands = new HashMap<>();
