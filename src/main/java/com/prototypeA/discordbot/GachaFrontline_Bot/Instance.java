@@ -91,7 +91,7 @@ public class Instance {
 		});
 
 		gateway.on(DisconnectEvent.class).subscribe(event -> {
-			Main.displayWarning("Connection interrupted. Please check your network status.");
+			Main.displayWarning("Gateway connection interrupted.");
 		});
 
 		gateway.on(ReadyEvent.class).subscribe(event -> {
@@ -141,8 +141,8 @@ public class Instance {
 	private void initGuildCommands() {
 		guildCommands = new HashMap<String, Command>();
 		guildCommands.put("avatar", new BotMisc("avatar"));
-		//guildCommands.put("exit", new BotSystem("exit"));
-		//guildCommands.put("goto", new BotSystem("goto"));
+		guildCommands.put("exit", new BotSystem("exit"));
+		guildCommands.put("goto", new BotSystem("goto"));
 		guildCommands.put("help", new BotHelp("to-channel", guildCommands));
 		//guildCommands.put("player", new BotAudio("player"));
 		//guildCommands.put("pmhelp", new BotHelp("to-dm", guildCommands));
