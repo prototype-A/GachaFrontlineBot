@@ -16,10 +16,12 @@ import java.util.Scanner;
 public abstract class Command extends BotMessage implements Runnable {
 
 	protected String command;
+	protected String subcommand;
 
 
 	protected void init(Message message, GatewayDiscordClient gateway) {
 		super.init(message, gateway);
+		
 	}
 
 	public abstract void run();

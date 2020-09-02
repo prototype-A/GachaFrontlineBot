@@ -27,11 +27,11 @@ public abstract class BotMessage extends Thread {
 	 *
 	 * @param content The message string to send
 	 */
-	protected void sendMessage(String content) {
-		Message newMessage = cmdMessage.getChannel()
-								.block()
-								.createMessage(content)
-								.block();
+	protected Message sendMessage(String content) {
+		return cmdMessage.getChannel()
+							.block()
+							.createMessage(content)
+							.block();
 	}
 
 	/**
@@ -42,12 +42,14 @@ public abstract class BotMessage extends Thread {
 	 * @param content The message string to send
 	 * @param emojis A list of emojis to add to the message as reactions
 	 */
-	protected void sendMessage(String content, String[] emojis) {
+	protected Message sendMessage(String content, String[] emojis) {
 		Message newMessage = cmdMessage.getChannel()
 								.block()
 								.createMessage(content)
 								.block();
 		addEmojisToMessage(newMessage, emojis);
+
+		return newMessage;
 	}
 
 	/**
@@ -56,8 +58,8 @@ public abstract class BotMessage extends Thread {
 	 *
 	 * @param embed The embed to send
 	 */
-	protected void sendMessage(Consumer <? super EmbedCreateSpec> embedSpec) {
-		Message newMessage = cmdMessage.getChannel()
+	protected Message sendMessage(Consumer <? super EmbedCreateSpec> embedSpec) {
+		return cmdMessage.getChannel()
 							.block()
 							.createEmbed(embedSpec)
 							.block();
@@ -88,11 +90,11 @@ public abstract class BotMessage extends Thread {
 	 * @param content The message string to send
 	 * @param user The user to send the direct message to
 	 */
-	protected void sendDirectMessage(String content, User user) {
-		Message newMessage = user.getPrivateChannel()
-								.block()
-								.createMessage(content)
-								.block();
+	protected Message sendDirectMessage(String content, User user) {
+		return user.getPrivateChannel()
+					.block()
+					.createMessage(content)
+					.block();
 	}
 
 	/**
@@ -102,11 +104,11 @@ public abstract class BotMessage extends Thread {
 	 * @param embed The embed to send
 	 * @param user The user to send the direct message to
 	 */
-	protected void sendDirectMessage(Consumer <? super EmbedCreateSpec> embedSpec, User user) {
-		Message newMessage = user.getPrivateChannel()
-								.block()
-								.createEmbed(embedSpec)
-								.block();
+	protected Message sendDirectMessage(Consumer <? super EmbedCreateSpec> embedSpec, User user) {
+		return user.getPrivateChannel()
+					.block()
+					.createEmbed(embedSpec)
+					.block();
 	}
 
 	/**

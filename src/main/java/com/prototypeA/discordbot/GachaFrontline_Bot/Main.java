@@ -11,31 +11,28 @@ import java.util.Scanner;
 
 public class Main {
 
-	/**
-	 * Main is the class executed when the bot is launched
-	 * and handles loggin in and running the instance(s)
-	 * of the bot
-	 */
-
-	private static HashMap<String, String> settings;
 	private static final String SETTINGS_FILE_NAME = "bot.settings";
-
-	private static final String TOKEN_KEY = "Token";
-	private static final String CMD_KEY = "CommandTrigger";
-
+	private static HashMap<String, String> settings;
+	private static HashMap<String, String> serverSettings;
 	private static Instance bot;
 
 
 	/**
-	 * Load settings from 'data/bot.settings' into a hashtable
+	 * Load settings from 'data/bot.settings' into a table
 	 */
-	private static void loadSettings() {
+	private static void loadBotSettings() {
 		try {
 			settings = new HashMap<String, String>();
 			Scanner reader = new Scanner(new File("data/" + SETTINGS_FILE_NAME));
 
+			// Iterate over all lines of text in file
 			while (reader.hasNext()) {
-				putSetting(reader.nextLine());
+				String setting = reader.nextLine();
+
+				// Ignore empty lines or lines that start with a '#' (comment)
+				if (setting.trim() != "" || setting.charAt(0) == '#') {
+					putSetting(setting, settings);
+				}
 			}
 			reader.close();
 		} catch (FileNotFoundException e) {
@@ -49,25 +46,32 @@ public class Main {
 	 *
 	 * @param line The line read from the settings file to split and store
 	 */
-	private static void putSetting(String line) {
+	private static void putSetting(String line, HashMap<String, String> map) {
 		String[] pair = line.split(":");
 		pair[0] = pair[0].trim();
 		pair[1] = pair[1].trim();
-		settings.put(pair[0], (pair[1] == null) ? "" : pair[1]);
+		map.put(pair[0], (pair[1] == null) ? "" : pair[1]);
 	}
 
 	/**
-	 * Gets a bot setting parameter from "bot.settings"
+	 * Returns a global bot setting parameter value from "bot.settings"
 	 *
 	 * @param param The setting to get the value for
 	 * @return The value of the setting
 	 */
 	public static String getParameter(String param) {
-		String botParam = settings.get(param);
-		if (botParam == null) {
-			//botParam = readServerSetting(param);
-		}
-		return botParam;
+		return settings.get(param);
+	}
+
+	/**
+	 * Returns a server setting value
+	 *
+	 * @param serverID The ID of the server
+	 * @param param The setting to get the value for
+	 * @return The value of the setting
+	 */
+	public static String getServerParameter(String serverID, String param) {
+		return serverSettings.get(param);
 	}
 
 	/**
@@ -107,10 +111,18 @@ public class Main {
 		return null;
 	}
 
+	/**
+	 * Writes and saves a server parameter setting for a
+	 * specified server
+	 * 
+	 * @param serverID The ID of the server
+	 * @param setting The parameter to write
+	 * @param value The value of the setting to write
+	 */
 	public static void writeServerSetting(String serverID, String setting, String value) {
-		String file = "data/Servers/" + serverID + "/bot.settings";
+		String filePath = "data/Servers/" + serverID + "/bot.settings";
 		try {
-			File settingsFile = new File(file);
+			File settingsFile = new File(filePath);
 			Scanner reader = new Scanner(settingsFile);
 			FileWriter writer = new FileWriter(settingsFile);
 			boolean written = false;
@@ -135,15 +147,14 @@ public class Main {
 		} catch (FileNotFoundException e1) {
 			// Create server settings file
 			try {
-				File createSettings = new File(file);
-				FileWriter writer = new FileWriter(createSettings);
+				FileWriter writer = new FileWriter(new File(filePath));
 				writer.write(setting + ": " + value);
 				writer.close();
-			} catch (Exception e2) {
-				displayError("Failed to create new settings file for server", e1);
+			} catch (Exception e) {
+				displayError("Failed to create new settings file for server ID" + serverID, e);
 			}
-		} catch (IOException e3) {
-			
+		} catch (IOException e2) {
+			displayError("Failed to write server ID " + serverID + "'s settings", e2);
 		}
 	}
 
@@ -224,44 +235,52 @@ public class Main {
 
 
 	/**
-	 * Launch the bot
+	 * Main is the class executed when the bot is launched
+	 * and handles loggin in and running the instance(s)
+	 * of the bot
 	 */
 	public static void main(String[] args) {
 
 		displayMessage("Launching...");
 
 		try {
-			// Testing mode
+			// Get launch args
 			boolean testMode = false;
 			for (int i = 0; i < args.length; i++) {
 				if (args[i].equals("-test") ||
 					args[i].equals("-t") ||
 					args[i].equals("--test") ) {
+					// Testing mode
 					testMode = true;
 				}
 			}
 
-			// Read settings file
-			loadSettings();
+			// Read settings
+			loadBotSettings();
 
 			// Kill the launch if token or key was not specified in settings file
-			String botToken = settings.get(TOKEN_KEY);
-			String botTrigger = settings.get(CMD_KEY);
-			if (botToken.equals("") || botTrigger.equals("")) {
-				throw new Exception("Bot token or command trigger not found");
-			}
-
-			// Continue launching the bot
-			displayMessage("Token and command trigger found. Logging in...");
+			String botToken = "";
+			String botTrigger = "";
+			
 			if (testMode) {
 				// Load test bot token and trigger instead
 				displayWarning("Launching in TEST mode");
-				botToken = settings.get("TestToken");;
+				botToken = settings.get("TestToken");
 				botTrigger = settings.get("TestCommandTrigger");
+				if (botToken.equals("") || botTrigger.equals("")) {
+					throw new Exception("Test Bot token or command trigger not found");
+				}
+			} else {
+				if (botToken.equals("") || botTrigger.equals("")) {
+					throw new Exception("Bot token or command trigger not found");
+				}
 			}
+
+			displayMessage("Token and command trigger found. Logging in...");
 			bot = new Instance(botToken, botTrigger);
 		} catch (Exception e) {
 			displayError("Failed to launch bot", e);
+			e.printStackTrace();
 		}
 
 	}
