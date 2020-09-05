@@ -2,6 +2,7 @@ package com.prototypeA.discordbot.GachaFrontline_Bot;
 
 import discord4j.core.object.entity.channel.Channel;
 import discord4j.core.spec.EmbedCreateSpec;
+import discord4j.rest.util.Color;
 
 import java.util.Iterator;
 import java.util.Map;
@@ -10,11 +11,11 @@ import java.util.function.Consumer;
 
 public class BotHelp extends Command {
 
-	private static Map<String, Map<String, Command>> commandLists;
+	private final Map<String, Map<String, Command>> commandLists;
 
 
 	public BotHelp(String command, Map<String, Map<String, Command>> commandLists) {
-		this.command = command;
+		super(command);
 		this.commandLists = commandLists;
 	}
 
@@ -25,11 +26,12 @@ public class BotHelp extends Command {
 
 			String arg = getAsOneArg();
 			String color = Main.getParameter("EmbedHelpColor");
+			String title = "";
 			String helpMessage = "";
 
 			if (arg == null) {
 				// List all available commands
-				helpMessage = "List of Available Commands:\n\n";
+				title = "List of Available Commands:";
 
 				// Iterate over command lists
 				Iterator<Map.Entry<String, Map<String, Command>>> listIter = commandLists.entrySet().iterator();
@@ -37,55 +39,104 @@ public class BotHelp extends Command {
 					Map.Entry<String, Map<String, Command>> list = listIter.next();
 					helpMessage += list.getKey() + " Commands:\n";
 
-					Iterator<String> cmdIter = list.getValue().keySet().iterator();
-					while (cmdIter.hasNext()) {
-						helpMessage += " " + Main.getKey() + cmdIter.next() + "\n";
+					// List all commands from command list
+					Iterator<Map.Entry<String, Command>> cmdListIter = list.getValue().entrySet().iterator();
+					while (cmdListIter.hasNext()) {
+						Map.Entry<String, Command> commandList = cmdListIter.next();
+						try {
+							// Module commands
+							CommandModule module = (CommandModule)commandList.getValue();
+							helpMessage += " " + listHelpCommand(module.getModuleTrigger(), false, false) +
+											" " + commandList.getKey() + "\n";
+						} catch (Exception e) {
+							// Non-module commands
+							helpMessage += " " + Main.getKey() +
+											commandList.getKey() + "\n";
+						}
 					}
 					helpMessage += "\n";
 				}
 
-				helpMessage += "\nYou can also type " + 
+				helpMessage += "You can also type " + 
 								formatHelpCommand("help", "command") + 
 								"to get help for a specific command.";
 			} else {
+				// Get help for specific command
+
 				// Remove leading command trigger key
 				if (arg.startsWith(Main.getKey())) {
 					arg = arg.substring(Main.getKey().length(), arg.length());
 				}
 
-				// Get help for specific command
-				try {
-					// Find command in command lists
-					Iterator<Map.Entry<String, Map<String, Command>>> listIter = commandLists.entrySet().iterator();
-					while (listIter.hasNext()) {
-						Map.Entry<String, Map<String, Command>> list = listIter.next();
-						if (list.getValue().containsKey(arg)) {
-							helpMessage = "Usage for " + formatHelpCommand(arg) + "command:\n\n";
-							helpMessage += list.getValue().get(arg).getHelp();
+				// Find command in command lists
+				boolean cmdFound = false;
+				Iterator<Map.Entry<String, Map<String, Command>>> listIter = commandLists.entrySet().iterator();
+				while (listIter.hasNext()) {
+					Map.Entry<String, Map<String, Command>> list = listIter.next();
+					if (list.getValue().containsKey(arg)) {
+						try {
+							// Module command
+							CommandModule module = (CommandModule)list.getValue().get(arg);
+							title = "Usage for **'" +
+											module.getModuleTrigger() +
+											" " + arg + "'** command:";
+							helpMessage = list.getValue().get(arg).getHelp();
+							cmdFound = true;
+							break;
+						} catch (Exception e) {
+							// Non-module command
+							title = "Usage for **'" + arg +
+											"'** command:";
+							helpMessage = list.getValue().get(arg).getHelp();
+							cmdFound = true;
 							break;
 						}
 					}
-				} catch (Exception e) {
+				}
+
+				// Command not found
+				if (!cmdFound) {
 					helpMessage = "Command '" + arg + "' not found";
 					color = Main.getParameter("EmbedFailureColor");
 				}
 			}
 
 			// Send message
-			Consumer <? super EmbedCreateSpec> embeddedMessage = JsonEmbed.embedMessage(helpMessage, color);
+			Color embedColor = Color.of(Integer.parseInt(color));
+			if (this.COMMAND.equals("to-channel")) {
+				// To guild
+				String embedTitle = title;
+				String embedBody = helpMessage;
+				sendMessage(spec -> spec.setTitle(embedTitle)
+										.setColor(embedColor)
+										.setDescription(embedBody));
+			}
 			/*
-			// Check whether to send to guild channel or user PM (after being called from a guild)
-			if (this.command.equals("to-dm")) {
+			else if (this.COMMAND.equals("to-dm")) {
+				// To direct messages
 				sendDirectMessage(embeddedMessage, cmdMessage.getAuthor().get());
 				if (cmdMessage.getType() == Channel.Type.GUILD_TEXT) {
 					sendTempMessage("Help was sent to your DM!");
 				}
-			} else
-			*/
-			if (this.command.equals("to-channel")) {
-				sendMessage(embeddedMessage);
 			}
+			*/
 		}
+	}
+
+	/**
+	 * Returns the command with the trigger formatted for
+	 * listing
+	 *
+	 * @param command The command issued
+	 * @param bold Applies bold to the command if True
+	 * @param singleQuote Applies single quotes to the command if True
+	 * @return The formatted command
+	 */
+	private static String listHelpCommand(String command, boolean bold,
+											boolean singleQuote) {
+		return ((singleQuote) ? "'" : "") + ((bold) ? "**" : "") +
+				Main.getKey() + command +
+				((bold) ? "**" : "") + ((singleQuote) ? "'" : " ");
 	}
 
 	/**
@@ -95,7 +146,7 @@ public class BotHelp extends Command {
 	 * @return The formatted command
 	 */
 	public static String formatHelpCommand(String command) {
-		return "'**" + Main.getKey() + command + "**' ";
+		return listHelpCommand(command, true, true);
 	}
 
 	/**
@@ -111,7 +162,7 @@ public class BotHelp extends Command {
 			return formatHelpCommand(command);
 		}
 
-		return "'**" + Main.getKey() + command + "** *" + params + "*' ";
+		return listHelpCommand(command, true, true) + "*" + params + "*' ";
 	}
 
 	/**
@@ -122,7 +173,7 @@ public class BotHelp extends Command {
 	 * @return The formatted help message
 	 */
 	public static String formatHelpMessage(String command, String helpMsg) {
-		return formatHelpCommand(command) + " - " + helpMsg + "\n";
+		return formatHelpCommand(command) + "\n" + helpMsg + "\n";
 	}
 
 	/**
@@ -139,7 +190,36 @@ public class BotHelp extends Command {
 			return formatHelpMessage(command, helpMsg);
 		}
 
-		return formatHelpCommand(command, params) + " - " + helpMsg + "\n";
+		return formatHelpCommand(command, params) + "\n" + helpMsg + "\n";
+	}
+
+	/**
+	 * Returns a formatted help message of a specified sub-command
+	 * in a main command module
+	 *
+	 * @param command The main command issued
+	 * @param subcommand The sub-command issued
+	 * @return The formatted command and subcommand string
+	 */
+	public static String formatModuleHelpCommand(String command,
+													String subcommand) {
+		return "'**" + Main.getKey() + command + " " + subcommand + "**'\n";
+	}
+
+	/**
+	 * Returns a formatted help message of a specified sub-command
+	 * in a main command module
+	 *
+	 * @param command The main command issued
+	 * @param subcommand The sub-command issued
+	 * @param helpMsg The help message of the sub-command
+	 * @return The formatted help message
+	 */
+	public static String formatModuleHelpMessage(String command,
+													String subcommand,
+													String helpMsg) {
+		return formatModuleHelpCommand(command, subcommand).replace("\n", "") +
+				helpMsg + "\n";
 	}
 
 	/**
@@ -150,23 +230,26 @@ public class BotHelp extends Command {
 	 * @param subcommand The sub-command issued
 	 * @param params The possible parameters of the sub-command
 	 * @param helpMsg The help message of the sub-command
+	 * @return The formatted help message
 	 */
-	public static String formatHelpMessage(String command, String subcommand,
-											String params, String helpMsg) {
+	public static String formatModuleHelpMessage(String command,
+													String subcommand,
+													String params,
+													String helpMsg) {
 		if (params == null || params.equals("")) {
-			return formatHelpMessage(command, subcommand, helpMsg);
+			return formatModuleHelpMessage(command, subcommand, helpMsg);
 		}
 
-		return formatHelpCommand(command) +
-				formatHelpMessage(subcommand, params, helpMsg);
+		return formatModuleHelpCommand(command, subcommand).replace("'\n", "") +
+				" *" + params + "*'\n" + helpMsg + "\n";
 	}
 
 	public String getHelp() {
 		String helpMessage = "";
-		if (this.command.equals("to-dm")) {
-			helpMessage += "Sends a message to your DMs containing help regarding commands";
+		if (this.COMMAND.equals("to-dm")) {
+			helpMessage += formatHelpMessage("pmhelp", "Sends a message to your DMs containing help regarding commands");
 		} else {
-			helpMessage += formatHelpMessage("help", "Displays the list of available commands");
+			helpMessage += formatHelpMessage("help", "Displays the list of available commands") + "\n";
 			helpMessage += formatHelpMessage("help", "command", "Displays help for a specific command");
 		}
 

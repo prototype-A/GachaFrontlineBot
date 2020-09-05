@@ -16,7 +16,7 @@ import java.util.Scanner;
 import java.util.function.Consumer;
 
 
-public class BotGFL extends Command {
+public class BotGFL extends CommandModule {
 
 	private static JSONObject tdollDataJson;
 	private static JSONObject fairyDataJson;
@@ -25,11 +25,30 @@ public class BotGFL extends Command {
 	//private JSONObject equipDataJson;
 	private static JSONObject mapDataJson;
 	private final static String URL_HEADER = Main.getParameter("AssetHeader");
+	private final static String GFL_COMMAND = Main.getParameter("GFLCommand");
 
 
-	public BotGFL(String command, String subCommand) {
-		this.command = command;
-		this.subcommand = subCommand;
+	public BotGFL() {
+		super("Girls Frontline", GFL_COMMAND);
+
+		// Add available commands to list
+		COMMANDS.put("craft", new BotGFL(GFL_COMMAND, "constructiontimer"));
+		//COMMANDS.put("equip", new BotGFL(GFL_COMMAND, "equip"));
+		//COMMANDS.put("equipment", new BotGFL(GFL_COMMAND, "equip"));
+		COMMANDS.put("fairy", new BotGFL(GFL_COMMAND, "fairy"));
+		COMMANDS.put("map", new BotGFL(GFL_COMMAND, "map"));
+		COMMANDS.put("mix", new BotGFL(GFL_COMMAND, "mix"));
+		COMMANDS.put("prod", new BotGFL(GFL_COMMAND, "productiontimer"));
+		COMMANDS.put("production", new BotGFL(GFL_COMMAND, "productiontimer"));
+		COMMANDS.put("tdoll", new BotGFL(GFL_COMMAND, "tdoll"));
+		COMMANDS.put("t-doll", new BotGFL(GFL_COMMAND, "tdoll"));
+		COMMANDS.put("timer", new BotGFL(GFL_COMMAND, "timer"));
+	}
+
+	public BotGFL(String command, String subcommand) {
+		super("Girls Frontline", GFL_COMMAND, command, subcommand);
+
+		// Load all associated JSON
 		loadJson();
 	}
 
@@ -45,7 +64,7 @@ public class BotGFL extends Command {
 			} catch (Exception e) {}
 
 			// Display T-Doll info
-			if (this.subcommand.equals("tdoll")) {
+			if (this.SUBCOMMAND.equals("tdoll")) {
 				// Whether to display mod3 info or not
 				arg = arg.replace("-", "");
 				boolean mod3 = false;
@@ -67,7 +86,7 @@ public class BotGFL extends Command {
 				} catch (Exception e) {
 					e.printStackTrace();
 				}
-			} else if (this.subcommand.equals("fairy")) {
+			} else if (this.SUBCOMMAND.equals("fairy")) {
 				// Display fairy info
 				// Start emoji reaction navigation thread for a period of time
 				Message msg = sendMessage(displayFairyInfo(arg));
@@ -80,21 +99,21 @@ public class BotGFL extends Command {
 				} catch (Exception e) {
 					e.printStackTrace();
 				}
-			} else if (this.subcommand.equals("equip")) {
+			} else if (this.SUBCOMMAND.equals("equip")) {
 				//sendMessage(displayEquipmentInfo(arg));
-			} else if (this.subcommand.equals("timer")) {
+			} else if (this.SUBCOMMAND.equals("timer")) {
 				// Display both potential T-Doll and equipment from a given timer
 				JsonEmbed.embedAsWebhook(Main.getParameter("TimerWebhook"), embedEquipmentTdollsFromTimer(arg));
-			} else if (this.subcommand.equals("constructiontimer")) {
+			} else if (this.SUBCOMMAND.equals("constructiontimer")) {
 				// Display potential T-Doll from given construction timer
 				JsonEmbed.embedAsWebhook(Main.getParameter("TimerWebhook"), embedTdollsFromTimer(arg));
-	 		} else if (this.subcommand.equals("productiontimer")) {
+	 		} else if (this.SUBCOMMAND.equals("productiontimer")) {
 				// Display potential equipment from given production timer
 				JsonEmbed.embedAsWebhook(Main.getParameter("TimerWebhook"), embedEquipmentFromTimer(arg));
-			} else if (this.subcommand.equals("map")) {
+			} else if (this.SUBCOMMAND.equals("map")) {
 				// Display specified map info
 				JsonEmbed.embedAsWebhook(Main.getParameter("MapWebhook"), displayMapInfo(arg));
-			} else if (this.subcommand.equals("mix")) {
+			} else if (this.SUBCOMMAND.equals("mix")) {
 				// Display VA11 Ha11-A drink combinations
 				JsonEmbed.embedAsWebhook(Main.getParameter("BartenderWebhook"), displayBartendingInfo());
 			}
@@ -759,21 +778,22 @@ public class BotGFL extends Command {
 		return null;
 	}
 
+
 	public String getHelp() {
-		if (this.subcommand.equals("tdoll")) {
-			return BotHelp.formatHelpMessage("t-doll/tdoll", "tdollname (mod3)", "Displays CG and detailed information of that T-Doll ('s digimind upgrade)");
-		} else if (this.subcommand.equals("fairy")) {
-			return BotHelp.formatHelpMessage(this.command, "fairyname", "Displays CG and detailed information of that Technical Fairy");
-		} else if (this.subcommand.equals("timer")) {
-			return BotHelp.formatHelpMessage(this.command, "h:mm", "Displays the potential T-Dolls and Equipment/Fairies with that construction/production timer");
-		} else if (this.subcommand.equals("constructiontimer")) {
-			return BotHelp.formatHelpMessage(this.command, "h:mm", "Displays the potential T-Dolls with that construction timer");
-		} else if (this.subcommand.equals("productiontimer")) {
-			return BotHelp.formatHelpMessage(this.command, "h:mm", "Displays the potential Equipment/Fairies with that production timer");
-		} else if (this.subcommand.equals("map")) {
-			return BotHelp.formatHelpMessage(this.command, "(event operation) map", "Displays information about that map with enemies that have fixed starting positions (enemies that have random starting locations or appear later will not be shown).");
-		} else if (this.subcommand.equals("mix")) {
-			return BotHelp.formatHelpMessage(this.command, "Displays the menu of available drinks and their \"ingredients\" (exclusive equipment) that Jill can mix.");
+		if (this.SUBCOMMAND.equals("tdoll")) {
+			return BotHelp.formatModuleHelpMessage(this.COMMAND, "t-doll/tdoll", "tdollname (mod3)", "Displays CG and detailed information of that T-Doll ('s digimind upgrade).");
+		} else if (this.SUBCOMMAND.equals("fairy")) {
+			return BotHelp.formatModuleHelpMessage(this.COMMAND, this.SUBCOMMAND, "fairyname", "Displays CG and detailed information of that Technical Fairy.");
+		} else if (this.SUBCOMMAND.equals("timer")) {
+			return BotHelp.formatModuleHelpMessage(this.COMMAND, this.SUBCOMMAND, "h:mm", "Displays the potential T-Dolls and Equipment/Fairies with that construction/production timer.");
+		} else if (this.SUBCOMMAND.equals("constructiontimer")) {
+			return BotHelp.formatModuleHelpMessage(this.COMMAND, "craft", "h:mm", "Displays the potential T-Dolls with that construction timer.");
+		} else if (this.SUBCOMMAND.equals("productiontimer")) {
+			return BotHelp.formatModuleHelpMessage(this.COMMAND, "prod/production", "h:mm", "Displays the potential Equipment/Fairies with that production timer.");
+		} else if (this.SUBCOMMAND.equals("map")) {
+			return BotHelp.formatModuleHelpMessage(this.COMMAND, this.SUBCOMMAND, "(event operation) map", "Displays information about that map with enemies that have fixed starting positions (enemies that have random starting locations or appear later will not be shown).");
+		} else if (this.SUBCOMMAND.equals("mix")) {
+			return BotHelp.formatModuleHelpMessage(this.COMMAND, this.SUBCOMMAND, "Displays the menu of available drinks and their \"ingredients\" (exclusive equipment) that Jill can mix.");
 		}
 
 		return "";

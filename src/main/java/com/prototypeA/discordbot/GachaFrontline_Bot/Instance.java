@@ -12,17 +12,10 @@ import discord4j.core.object.entity.channel.Channel;
 import discord4j.core.object.entity.channel.MessageChannel;
 import discord4j.core.object.entity.Message;
 
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.nio.file.Files;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Scanner;
 import java.util.TreeMap;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.TimeUnit;
 
 
 public class Instance {
@@ -33,9 +26,7 @@ public class Instance {
 	private final GatewayDiscordClient gateway;
 	private static Map<String, Command> pmCommands;
 	private static Map<String, Command> guildCommands;
-	private static Map<String, Command> gflCommands;
-
-	private static final String GFL_COMMAND = Main.getParameter("GFLCommand");
+	private static Map<String, CommandModule> modules;
 
 
 	public Instance(String token, String trigger) {
@@ -49,7 +40,7 @@ public class Instance {
 		// Attempt to log in
 		client = DiscordClient.create(TOKEN);
 		gateway = client.login()
-					.block();
+						.block();
 		Main.displayMessage("Login successful.");
 
 		// Subscribe to events
@@ -83,16 +74,22 @@ public class Instance {
 					Command pmCommand = pmCommands.get(command);
 					pmCommand.init(message, gateway);
 					commandThread = new Thread(pmCommand);
-				} else if (command.equals(GFL_COMMAND) && channel != null) {
-					// Valid GFL command
-					Command gflCommand = gflCommands.get(getCommand(messageContents, true));
-					gflCommand.init(message, gateway);
-					commandThread = new Thread(gflCommand);
 				} else if (guildCommands.containsKey(command) && channel != null) {
 					// Valid generic guild command
 					Command guildCommand = guildCommands.get(command);
 					guildCommand.init(message, gateway);
 					commandThread = new Thread(guildCommand);
+				} else {
+					// Search for command in modules
+					Iterator<Map.Entry<String, CommandModule>> moduleIter = modules.entrySet().iterator();
+					while (moduleIter.hasNext()) {
+						Map<String, Command> moduleCommands = moduleIter.next().getValue().getCommandList();
+						if (moduleCommands.containsKey(command)) {
+							Command moduleCommand = moduleCommands.get(command);
+							moduleCommand.init(message, gateway);
+							commandThread = new Thread(moduleCommand);
+						}
+					}
 				}
 
 				// Run the command if found
@@ -134,8 +131,18 @@ public class Instance {
 	 * Initializes all of the bot's available commands
 	 */
 	private void initCommands() {
-		initGuildCommands();
-		//initPmCommands();
+		Map<String, Map<String, Command>> commandLists = new TreeMap<>();
+
+		// Iniialize generic Discord guild commands
+		initGuildCommands(commandLists);
+
+		// Initialize generic Discord DM Commands
+		//initPmCommands(commandLists);
+
+		// Add module commands
+		modules = new TreeMap<>();
+		modules.put(Main.getParameter("GFLCommand"), new BotGFL());
+		initModuleCommands(commandLists);
 	}
 
 	/**
@@ -150,13 +157,10 @@ public class Instance {
 	/**
 	 * Guild (Server) commands
 	 */
-	private void initGuildCommands() {
+	private void initGuildCommands(Map<String, Map<String, Command>> commandLists) {
 		// Initialize command lists
 		guildCommands = new TreeMap<String, Command>();
-		gflCommands = new TreeMap<>();
-		Map<String, Map<String, Command>> commandLists = new TreeMap<>();
 		commandLists.put("Discord", guildCommands);
-		commandLists.put("Girls Frontline", gflCommands);
 
 		// Generic Discord commands
 		guildCommands.put("avatar", new BotMisc("avatar"));
@@ -167,20 +171,18 @@ public class Instance {
 		//guildCommands.put("pmhelp", new BotHelp("to-dm", guildCommands));
 		//guildCommands.put("queue", new BotAudio("queue"));
 		//guildCommands.put("quote", new BotMisc("quote"));
-
-		// Girls Frontline
-		gflCommands.put("craft", new BotGFL(GFL_COMMAND, "constructiontimer"));
-		//gflCommands.put("equip", new BotGFL(GFL_COMMAND, "equip"));
-		//gflCommands.put("equipment", new BotGFL(GFL_COMMAND, "equip"));
-		gflCommands.put("fairy", new BotGFL(GFL_COMMAND, "fairy"));
-		gflCommands.put("map", new BotGFL(GFL_COMMAND, "map"));
-		gflCommands.put("mix", new BotGFL(GFL_COMMAND, "mix"));
-		gflCommands.put("prod", new BotGFL(GFL_COMMAND, "productiontimer"));
-		gflCommands.put("production", new BotGFL(GFL_COMMAND, "productiontimer"));
-		gflCommands.put("tdoll", new BotGFL(GFL_COMMAND, "tdoll"));
-		gflCommands.put("t-doll", new BotGFL(GFL_COMMAND, "tdoll"));
-		gflCommands.put("timer", new BotGFL(GFL_COMMAND, "timer"));
   	}
+
+	/**
+	 * Initialize module command lists
+	 */
+	private void initModuleCommands(Map<String, Map<String, Command>> commandLists) {
+		Iterator<Map.Entry<String, CommandModule>> moduleIter = modules.entrySet().iterator();
+		while (moduleIter.hasNext()) {
+			Map.Entry<String, CommandModule> module = moduleIter.next();
+			commandLists.put(module.getValue().getModuleName(), module.getValue().getCommandList());
+		}
+	}
 
 	/**
 	 * Returns the main or sub-command used

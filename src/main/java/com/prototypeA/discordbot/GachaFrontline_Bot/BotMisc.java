@@ -23,22 +23,24 @@ import java.util.Scanner;
 
 public class BotMisc extends Command {
 
+
 	public BotMisc(String command) {
-		this.command = command;
+		super(command);
 	}
 
 	public void run() {
 
 		// Check for permissions
 		if (canIssueBotCommands()) {
+
 			// Get the avatar url of the user's nickname
-			if (command.equals("avatar")) {
+			if (COMMAND.equals("avatar")) {
 				// User search query (either name or user id)
 				User user = null;
 				String search = getAsOneArg();
 				String query = (search != null) ? search.toLowerCase() : null;
 
-				// Display own avatar if no query provided
+				// Display own avatar if no user query provided
 				if (query == null) {
 					user = cmdMessage.getAuthor().get();
 				} else {
@@ -66,7 +68,7 @@ public class BotMisc extends Command {
 					sendTempMessage("User not found");
 				} else {
 					/* Local variables referenced from a
-					lambda expressionMust be final or
+					lambda expression must be final or
 					effectively final */
 					final String title = user.getTag() + "'s Avatar";
 					final String avatarUrl = getAvatarUrl(user) + "?size=2048";
@@ -78,7 +80,7 @@ public class BotMisc extends Command {
 			}
 
 			// Quote a user's message from a channel that the bot can read
-			else if (command.equals("quote")) {
+			else if (COMMAND.equals("quote")) {
 				// Find message in current guild by message id
 				String arg = getAsOneArg();
 				Message msg = null;
@@ -122,10 +124,11 @@ public class BotMisc extends Command {
 	 */
 	public String getHelp() {
 		String helpMessage = "";
-		if (command.equals("avatar")) {
-			helpMessage += BotHelp.formatHelpMessage("avatar", "Displays your Discord profile picture");
-			helpMessage += BotHelp.formatHelpMessage("avatar", "name", "Displays the Discord profile picture of the user with the specified nickname/username/username + tag");
+		if (COMMAND.equals("avatar")) {
+			helpMessage += BotHelp.formatHelpMessage("avatar", "Displays your Discord profile picture") + "\n";
+			helpMessage += BotHelp.formatHelpMessage("avatar", "name", "Displays the Discord profile picture of the user with the specified nickname/username/username + tag") + "\n";
 			helpMessage += BotHelp.formatHelpMessage("avatar", "user_id", "Displays the Discord profile picture of the user with the specified user_id");
+		} else if (COMMAND.equals("quote")) {
 			helpMessage += BotHelp.formatHelpMessage("quote", "message_id", "Displays the message posted in a bot-accessible text channel within this server with the specified message_id");
 		}
 

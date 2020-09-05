@@ -23,7 +23,7 @@ public class BotSystem extends Command {
 
 
 	public BotSystem(String command) {
-		this.command = command;
+		super(command);
 	}
 
 	public void init(Message message, GatewayDiscordClient gateway) {
@@ -38,7 +38,7 @@ public class BotSystem extends Command {
 			// Get arguments passed
 			String[] args = getArgs();
 
-			if (command.equals("goto")) {
+			if (COMMAND.equals("goto")) {
 				/**
 				 * Attempts to join the specified Voice Channel, otherwise
 				 * move to the sender's channel if none was given
@@ -47,7 +47,7 @@ public class BotSystem extends Command {
 				joinVoiceChannel(voiceChannelName);
 			}
 
-			else if (command.equals("exit")) {
+			else if (COMMAND.equals("exit")) {
 				try {
 					// Attempt to leave the Voice Channel it currently is in (if in one)
 					gateway.getSelf()
@@ -185,14 +185,13 @@ public class BotSystem extends Command {
 	 * Return the command-specific help String to BotHelp
 	 */
 	public String getHelp() {
-		String helpMessage = "List of parameters for the '" + command + "' command:\n\n";
+		String helpMessage = "";
 
-		if (command.equals("goto")) {
-			helpMessage += "'goto'\nThe bot will attempt to join the Voice Channel that you are currently in (Only works if you are in a Voice Channel)\n\n";
-			helpMessage += "'goto *channel_name*'\nThe bot will attempt to join the specified Voice Channel";
-		}
-		else if (command.equals("exit")) {
-			helpMessage += "'exit'\nThe bot will disconnect from the Voice Channel it is currently in (Only works if it is currently in a Voice Channel)";
+		if (this.COMMAND.equals("goto")) {
+			helpMessage += BotHelp.formatHelpMessage("goto", "The bot will attempt to join the Voice Channel that you are currently in.") + "\n";
+			helpMessage += BotHelp.formatHelpMessage("goto", "channel_name", "The bot will attempt to join the specified Voice Channel *\"channel_name\"*.");
+		} else if (this.COMMAND.equals("exit")) {
+			helpMessage += BotHelp.formatHelpMessage("exit", "The bot will disconnect from the Voice Channel it is currently in.");
 		}
 
 		return helpMessage;
