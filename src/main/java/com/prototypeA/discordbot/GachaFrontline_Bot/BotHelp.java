@@ -29,8 +29,8 @@ public class BotHelp extends Command {
 			String title = "";
 			String helpMessage = "";
 
+			// List all available commands
 			if (arg == null) {
-				// List all available commands
 				title = "List of Available Commands:";
 
 				// Iterate over command lists
@@ -60,44 +60,53 @@ public class BotHelp extends Command {
 				helpMessage += "You can also type " + 
 								formatHelpCommand("help", "command") + 
 								"to get help for a specific command.";
-			} else {
-				// Get help for specific command
+			}
 
-				// Remove leading command trigger key
-				if (arg.startsWith(Main.getKey())) {
-					arg = arg.substring(Main.getKey().length(), arg.length());
+			// Get help for specific command
+			else {
+				// Get args and remove leading command trigger key if entered
+				String[] args = getArgs();
+				if (args[0].startsWith(Main.getKey())) {
+					args[0] = args[0].substring(Main.getKey().length(), args[0].length());
 				}
 
-				// Find command in command lists
-				boolean cmdFound = false;
-				Iterator<Map.Entry<String, Map<String, Command>>> listIter = commandLists.entrySet().iterator();
-				while (listIter.hasNext()) {
-					Map.Entry<String, Map<String, Command>> list = listIter.next();
-					if (list.getValue().containsKey(arg)) {
-						try {
-							// Module command
-							CommandModule module = (CommandModule)list.getValue().get(arg);
-							title = "Usage for **'" +
-											module.getModuleTrigger() +
-											" " + arg + "'** command:";
-							helpMessage = list.getValue().get(arg).getHelp();
-							cmdFound = true;
-							break;
-						} catch (Exception e) {
-							// Non-module command
-							title = "Usage for **'" + arg +
-											"'** command:";
-							helpMessage = list.getValue().get(arg).getHelp();
-							cmdFound = true;
-							break;
+				if (args.length == 2 && commandLists.get(args[0]) != null) {
+					// Module trigger specified
+					
+				} else {
+					// Find command in all command lists
+					boolean cmdFound = false;
+					Iterator<Map.Entry<String, Map<String, Command>>> listIter = commandLists.entrySet().iterator();
+					while (listIter.hasNext()) {
+						Map.Entry<String, Map<String, Command>> list = listIter.next();
+						if (list.getValue().containsKey(arg)) {
+							try {
+								// Module command
+								CommandModule module = (CommandModule)list.getValue().get(arg);
+								title = "Usage for **'" +
+												module.getModuleTrigger() +
+												" " + arg + "'** command:";
+								helpMessage = list.getValue().get(arg).getHelp();
+								cmdFound = true;
+								break;
+							} catch (Exception e) {
+								// Non-module command
+								title = "Usage for **'" + arg +
+												"'** command:";
+								helpMessage = list.getValue().get(arg).getHelp();
+								cmdFound = true;
+								break;
+							}
 						}
 					}
-				}
 
-				// Command not found
-				if (!cmdFound) {
-					helpMessage = "Command '" + arg + "' not found";
-					color = Main.getParameter("EmbedFailureColor");
+					// Command not found
+					if (!cmdFound) {
+						sendTempMessage(spec -> {
+											spec.setColor(Color.of(Integer.parseInt(Main.getParameter("EmbedFailureColor"))))
+												.setDescription("Command '" + arg + "' not found");
+										});
+					}
 				}
 			}
 

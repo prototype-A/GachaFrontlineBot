@@ -59,9 +59,9 @@ public class Instance {
 
 			// Check if user tried to issue a bot command
 			if (messageContents.startsWith(CMD_TRIGGER)) {
-				// Remove command symbol and validate issued bot command
+				// Validate issued bot command
 				String command = getCommand(messageContents);
-				messageContents = messageContents.substring(CMD_TRIGGER.length());
+				String subcommand = getCommand(messageContents, true);
 				MessageChannel channel = event.getMessage()
 												.getChannel()
 												.block();
@@ -69,7 +69,8 @@ public class Instance {
 				Thread commandThread = null;
 
 				// Find command to run
-				if (channel.getType() == Channel.Type.DM && pmCommands.containsKey(command)) {
+				if (channel.getType() == Channel.Type.DM &&
+					pmCommands.containsKey(command)) {
 					// PM Command
 					Command pmCommand = pmCommands.get(command);
 					pmCommand.init(message, gateway);
@@ -81,20 +82,21 @@ public class Instance {
 					commandThread = new Thread(guildCommand);
 				} else {
 					// Search for command in modules
-					Iterator<Map.Entry<String, CommandModule>> moduleIter = modules.entrySet().iterator();
-					while (moduleIter.hasNext()) {
-						Map<String, Command> moduleCommands = moduleIter.next().getValue().getCommandList();
-						if (moduleCommands.containsKey(command)) {
-							Command moduleCommand = moduleCommands.get(command);
-							moduleCommand.init(message, gateway);
-							commandThread = new Thread(moduleCommand);
-						}
-					}
+					try {
+						Command moduleCommand = modules.get(command)
+														.getCommandList()
+														.get(subcommand);
+						moduleCommand.init(message, gateway);
+						commandThread = new Thread(moduleCommand);
+					} catch (Exception e) {}
 				}
 
 				// Run the command if found
 				if (commandThread != null) {
 					commandThread.start();
+				} else {
+					Main.displayMessage("Command " + command + " " +
+										subcommand + " not found");
 				}
 			}
 		});
@@ -188,24 +190,30 @@ public class Instance {
 	 * Returns the main or sub-command used
 	 *
 	 * @param message The message sent
-	 * @param getNextCommand If true, will return the (sub-)command after the main command
+	 * @param getSubCommand If true, will return the command after the main command
 	 * @return The command issued to the bot
 	 */
-	private String getCommand(String message, boolean getNextCommand) {
-		// Get just the command (not including the parameters)
+	private String getCommand(String message, boolean getSubCommand) {
 		message = message.toLowerCase();
-		int end = message.indexOf(" ");
-		if (end == -1) {
-			end = message.length();
-		}
+		int firstSpaceIndex = message.indexOf(" ");
+		int secondSpaceIndex = message.indexOf(" ", firstSpaceIndex + 1);
 
 		// Return sub-command
-		if (getNextCommand) {
-			return message.substring(0, end);
+		if (getSubCommand && secondSpaceIndex != -1) {
+			// Has arguments
+			return message.substring(firstSpaceIndex + 1, secondSpaceIndex);
+		} else if (getSubCommand && secondSpaceIndex == -1) {
+			// No arguments
+			return message.substring(firstSpaceIndex + 1, message.length());
+		}
+
+		// Return just the main command
+		if (firstSpaceIndex == -1) {
+			return message.substring(CMD_TRIGGER.length(), message.length());
 		}
 
 		// Return main command
-		return message.substring(CMD_TRIGGER.length(), end);
+		return message.substring(CMD_TRIGGER.length(), firstSpaceIndex);
 	}
 
 	/**

@@ -56,7 +56,7 @@ public abstract class BotMessage extends Thread {
 	 * Constructs and sends embedded content to the same channel
 	 * that the command was passed to
 	 *
-	 * @param embed The embed to send
+	 * @param embedSpec The embedded content to send
 	 */
 	protected Message sendMessage(Consumer <? super EmbedCreateSpec> embedSpec) {
 		return cmdMessage.getChannel()
@@ -78,6 +78,24 @@ public abstract class BotMessage extends Thread {
 								.block()
 								.createMessage(content)
 								.block();
+		delay(Integer.parseInt(Main.getParameter("TempMessageTime")) * 1000);
+		newMessage.delete().block();
+		cmdMessage.delete().block();
+	}
+
+	/**
+	 * Constructs and sends a temporary message to the channel 
+	 * that the command was passed to. It will be deleted after 
+	 * a short delay, along with the user message that issued the
+	 * command
+	 *
+	 * @param embedSpec The embedded content to send
+	 */
+	protected void sendTempMessage(Consumer <? super EmbedCreateSpec> embedSpec) {
+		Message newMessage = cmdMessage.getChannel()
+										.block()
+										.createEmbed(embedSpec)
+										.block();
 		delay(Integer.parseInt(Main.getParameter("TempMessageTime")) * 1000);
 		newMessage.delete().block();
 		cmdMessage.delete().block();
@@ -130,10 +148,29 @@ public abstract class BotMessage extends Thread {
 	 * @param emoji The emoji to react with
 	 */
 	private void addEmojiToMessage(Message message, String emoji) {
-		message.addReaction(ReactionEmoji.of(null, emoji, false));
+		message.addReaction(ReactionEmoji.unicode(emoji)).block();
+	}
+
+	/**
+	 * Capitalizes all words and replaces underscores
+	 * with spaces
+	 *
+	 * @param name The string to format
+	 * @return The formatted string
+	 */
+	protected String formatName(String name) {
+		String[] words = name.split("_");
+		String formattedName = "";
+		for (int i = 0; i < words.length; i++) {
+			formattedName += Character.toTitleCase(words[i].charAt(0)) +
+								words[i].substring(1) + " ";
+		}
+
+		return formattedName.trim();
 	}
 
 	protected abstract void redoReacts();
+
 
 	/**
 	 * Wait for delayPeriod milliseconds before resuming

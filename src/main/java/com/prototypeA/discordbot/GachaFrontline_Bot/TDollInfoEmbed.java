@@ -11,6 +11,7 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.util.Iterator;
+import java.util.Map;
 
 
 public class TDollInfoEmbed extends CGScroll {
@@ -32,22 +33,25 @@ public class TDollInfoEmbed extends CGScroll {
 		}
 		String[] cgList = null;
 		try {
+			// Load skin CG
 			JSONObject skinJson = IMG_JSON.getJSONObject("skins");
 			JSONArray skinList = skinJson.getJSONArray("list");
-			cgList = new String[2 + skinList.length() * 2];
+			cgList = new String[defaultCG.length() + skinList.length() * 2];
 
-			for (int i = 2;  i < cgList.length; i = i + 2) {
-				String skin = (String)skinList.get(i / 2 - 1);
-				cgList[i] = skinJson.getJSONObject(skin).getString("normal");
-				cgList[i + 1] = skinJson.getJSONObject(skin).getString("damaged");
+			for (int i = defaultCG.length();  i < cgList.length; i = i + 2) {
+				String skinName = (String)skinList.get(i / 2 - 1);
+				cgList[i] = skinJson.getJSONObject(skinName).getString("normal");
+				cgList[i + 1] = skinJson.getJSONObject(skinName).getString("damaged");
 			}
 		} catch (Exception e) {
 			// No skins found
-			cgList = new String[2];
+			cgList = new String[defaultCG.length()];
 		} finally {
 			// Load default CG
-			cgList[0] = defaultCG.getString("normal");
-			cgList[1] = defaultCG.getString("damaged");
+			JSONArray defaultCGList = defaultCG.toJSONArray(defaultCG.names());
+			for (int i = 0; i < defaultCG.length(); i++) {
+				cgList[i] = (String)defaultCGList.get(i);
+			}
 		}
 
 		return cgList;
@@ -83,7 +87,7 @@ public class TDollInfoEmbed extends CGScroll {
 	}
 
 	protected String getNewFooterText(String[] newImage) {
-		return newImage[0].replace(" (Live2D)", "") + (imgIndex + 1) + "/" + IMG_LIST.length;
+		return newImage[0] + " " + (imgIndex + 1) + "/" + IMG_LIST.length;
 	}
 
 	protected String getNewImageUrl(String[] newImage) {
@@ -91,18 +95,51 @@ public class TDollInfoEmbed extends CGScroll {
 	}
 
 	protected String[] getImage() {
+		JSONObject defaultCG = IMG_JSON.getJSONObject("default");
+
+		// Load skins, if any
+		JSONObject skins = IMG_JSON.getJSONObject("skins");
 		JSONArray skinList = null;
 		try {
-			skinList = IMG_JSON.getJSONObject("skins").getJSONArray("list");
+			skinList = skins.getJSONArray("list");
 		} catch (Exception e) {}
 
-		String cgName = "Default";
+		// Determine CG name (default or skin)
+		String cgName = "";
+		String expression = "";
 		if (skinList != null) {
-			cgName = (imgIndex <= 1) ? "Default" :
+			// Determine cg name
+			cgName = (imgIndex <= (defaultCG.length() - 1)) ? "Default" :
 						(String)(skinList.get(imgIndex / 2 - 1));
-		}
-		String cgCond = (imgIndex % 2 == 0) ? " " : " (Damaged) ";
 
-		return new String[]{ cgName + cgCond, IMG_LIST[imgIndex] };
+			// Determine cg expression
+			JSONArray cgExpr = defaultCG.names();
+			if (imgIndex <= (cgExpr.length() - 1)) {
+				// Skin expression
+				if (((String)(cgExpr.get(imgIndex))).startsWith("*")) {
+					cgName = formatName((String)(cgExpr.get(imgIndex)));
+				}
+
+				expression = (" (" +
+							formatName((String)(cgExpr.get(imgIndex))) +
+							") ").replace(" (Normal)", "");
+			} else {
+				// Damaged or regular skin CG
+				JSONArray skinNames = skins.names();
+				skins.names().remove(0);
+				JSONArray skinUrlArray = skins.toJSONArray(skinNames);
+				int skinIndex = (imgIndex - cgExpr.length()) / 2;
+				JSONObject skinUrls = (JSONObject)skinUrlArray.get(skinIndex);
+				int skinExprIndex = (imgIndex - cgExpr.length()) % 2;
+				expression = (" (" +
+							formatName((String)(skinUrls.names().get(skinExprIndex))) +
+							") ").replace(" (Normal)", "");
+			}
+			
+		}
+
+		
+
+		return new String[]{ cgName + expression, IMG_LIST[imgIndex] };
 	}
 }

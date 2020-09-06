@@ -52,22 +52,41 @@ public abstract class Command extends BotMessage implements Runnable {
 	}
 
 	/**
-	 * Fetch all arguments passed in the command and returns it as a whole string
+	 * Fetch all arguments passed in the command and returns it
+	 * as a whole string
 	 *
+	 * @param module Determines whether to strip the second argument (subcommand) or not
 	 * @return All arguments passed to the command as an entire string
 	 */
-	protected String getAsOneArg() {
-
+	protected String getAsOneArg(boolean module) {
 		// Initialize as no arguments passed
 		String arg = null;
 
 		// Check if there is any spaces => there are arguments passed
 		String content = cmdMessage.getContent();
 		if (content.contains(" ")) {
-            arg = content.substring(content.indexOf(' ') + 1).trim();
+			int firstSpaceIndex = content.indexOf(" ");
+			int secondSpaceIndex = content.indexOf(" ", firstSpaceIndex + 1);
+			if (!module || secondSpaceIndex == -1) {
+				// Remove only first word (command)
+            	arg = content.substring(firstSpaceIndex + 1).trim();
+			} else {
+				// Remove second word as well (subcommand)
+				arg = content.substring(secondSpaceIndex).trim();
+			}
         }
 
 		return arg;
+	}
+
+	/**
+	 * Fetch all arguments passed in the command and returns it
+	 * as a whole string
+	 *
+	 * @return All arguments passed to the command as an entire string
+	 */
+	protected String getAsOneArg() {
+		return getAsOneArg(false);
 	}
 
 	/**

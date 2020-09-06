@@ -2,6 +2,8 @@ package com.prototypeA.discordbot.GachaFrontline_Bot;
 
 import discord4j.core.object.entity.Message;
 import discord4j.core.spec.EmbedCreateSpec;
+import discord4j.discordjson.json.EmbedData;
+import discord4j.discordjson.json.EmbedFieldData;
 import discord4j.rest.util.Color;
 
 import org.json.JSONArray;
@@ -11,6 +13,7 @@ import org.json.simple.parser.JSONParser;
 
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.util.Iterator;
 import java.util.Random;
 import java.util.Scanner;
 import java.util.function.Consumer;
@@ -60,7 +63,7 @@ public class BotGFL extends CommandModule {
 			// Format inputted T-Doll name
 			String arg = "";
 			try {
-				arg = getAsOneArg().replaceAll("\\s", "").replace(".", "").toLowerCase();
+				arg = getAsOneArg(true).replaceAll("\\s", "").replace(".", "").toLowerCase();
 			} catch (Exception e) {}
 
 			// Display T-Doll info
@@ -335,17 +338,20 @@ public class BotGFL extends CommandModule {
 		int rarity = data.getInt("rarity");
 		int embedColor = 16760576; // 5* "Fluorescent Orange"
 		if (rarity == 6) {
-			// Collab EXTRA A lighter tint of Amethyst
-			embedColor = 12558303;
+			// 6* (5* Digimind Upgrade)
+			embedColor = 12339252;
 		} else if (rarity == 4) {
-			// 4* "Android Green"
+			// 4* - "Android Green"
 			embedColor = 10798649;
 		} else if (rarity == 3) {
-			// 3* A tint of Dark Turquoise
+			// 3* - A tint of Dark Turquoise
 			embedColor = 1965311;
 		} else if (rarity == 2) {
-			// 2* A tint of Dark Grey
+			// 2* - A tint of Dark Grey
 			embedColor = 14671839;
+		} else if (rarity == 0) {
+			// Collab EXTRA - A lighter tint of Amethyst
+			embedColor = 12558303;
 		}
 
 		// Description
@@ -402,20 +408,9 @@ public class BotGFL extends CommandModule {
 							.setUrl(tdollUrl)
 							.setColor(Color.of(embedColor))
 							.setDescription(tdollDesc)
+							.setThumbnail(thumbnailUrl)
 							.addField("Buff Tiles", tileEffect, false)
-							.addField(skill1Name, skill1Effect, false)
-							.addField("Equipment Slots", equipSlots, false);
-
-		// Image of T-doll (default cg)
-		if (mod3) {
-			newEmbed = newEmbed.setImage(URL_HEADER +
-								cg.getJSONObject("mod3").getString("normal") +
-								".png");
-		} else {
-			newEmbed = newEmbed.setImage(URL_HEADER +
-								cg.getJSONObject("default").getString("normal") +
-								".png");
-		}
+							.addField(skill1Name, skill1Effect, false);
 
 		// Skill 2 (mod3)
 		if (mod3) {
@@ -425,13 +420,17 @@ public class BotGFL extends CommandModule {
 								false);
 		}
 
+		// Equipment Slots
+		newEmbed = newEmbed.addField("Equipment Slots", equipSlots, false);
+
 		// T-Doll is craftable + construction timer
 		if (!mod3) {
 			boolean normalCraftable = data.getBoolean("craftable_normal");
 			boolean heavyCraftable = data.getBoolean("craftable_heavy");
 			if (normalCraftable || heavyCraftable) {
 				String craft = ((normalCraftable) ? "Normal, " : "") + ((heavyCraftable) ? "Heavy" : "");
-				newEmbed = newEmbed.addField("Constructable",craft.replaceAll(", $", ""),
+				newEmbed = newEmbed.addField("Constructable",
+												craft.replaceAll(", $", ""),
 												true);
 				newEmbed = newEmbed.addField("Construction Timer",
 												data.getString("craft_timer"),
@@ -471,7 +470,8 @@ public class BotGFL extends CommandModule {
 				skins += skinList.get(i) + "\n";
 			}
 			newEmbed = newEmbed.addField("Skins",
-								skins.replace("(Live2D)", "**(Live2D)**"),
+								skins.replace("(Live2D)", "**(Live2D)**")
+										.replace("(Simple Live2D)", "**(Simple Live2D)**"),
 								false);
 		} catch (Exception e) { /* No skins found */ }
 
@@ -480,99 +480,43 @@ public class BotGFL extends CommandModule {
 		newEmbed = newEmbed.addField("Illustrator", data.getString("artist"),
 										true);
 
+		// Image of T-doll (default cg)
+		if (mod3) {
+			newEmbed = newEmbed.setImage(URL_HEADER +
+								cg.getJSONObject("mod3").getString("normal") +
+								".png");
+		} else {
+			newEmbed = newEmbed.setImage(URL_HEADER +
+								cg.getJSONObject("default").getString("normal") +
+								".png");
+		}
+
 		// Display current CG/skin name as footer text
 		try {
-			newEmbed = newEmbed.setFooter("Default 1/" + (2 + cg.getJSONObject("skins").getJSONArray("list").length() * 2), null);
+			newEmbed = newEmbed.setFooter("Default 1/" + (cg.getJSONObject("default").names().length() + cg.getJSONObject("skins").getJSONArray("list").length() * 2), null);
 		} catch (Exception e) {
 			newEmbed = newEmbed.setFooter("Default 1/2", null);
 		}
 
 		/* Local variable referenced from a lambda expression
 		must be final or effectively final */
-		EmbedCreateSpec newEmbedSpec = newEmbed;
-		return spec -> spec = newEmbedSpec;
-	}
+		EmbedData newEmbedData = newEmbed.asRequest();
+		return spec -> {
+			spec.setTitle(newEmbedData.title().get())
+				.setUrl(newEmbedData.url().get())
+				.setDescription(newEmbedData.description().get())
+				.setColor(Color.of(newEmbedData.color().get()))
+				.setThumbnail(newEmbedData.thumbnail().get().url().get())
+				.setImage(newEmbedData.image().get().url().get())
+				.setFooter(newEmbedData.footer().get().text(), null);
 
-	/*
-	private EmbedJsonStringBuilder displayTdollInfo(String name) {
-
-		EmbedJsonStringBuilder infoPanel = new EmbedJsonStringBuilder();
-		JSONObject data = null;
-		try {
-			data = getTdollData(name).getJSONObject("");
-		} catch (Exception e) {
-			return errorEmbedJson("That T-Doll's data was not found in the database");
-		}
-		int rarity = data.getInt("rarity");
-
-		// Title
-		infoPanel.withTitle(data.getString("name"));
-
-		// Link title to gfwiki page
-		infoPanel.withUrl("https://en.gfwiki.com/wiki/" + data.getString("name").replace(" ", "_"));
-
-		// Change side bar color
-		String color = "16760576";
-		if (rarity == 4) {
-			// 4* "Android Green"
-			color = "10798649";
-		} else if (rarity == 3) {
-			// 3* A tint of Dark Turquoise
-			color = "1965311";
-		} else if (rarity == 2) {
-			// 2* A tint of Dark Grey
-			color = "14671839";
-		}
-		infoPanel.withColor(color);
-
-		// Description
-		String stars = "";
-		for (int i = 0; i < rarity; i++) {
-			stars += "☆";
-		}
-		infoPanel.withDesc(stars + " " + data.getString("class"));
-
-		// Buff tiles as thumbnail
-		infoPanel.withThumbnail("https://cdn.discordapp.com/attachments/487029209114345502/" + data.getString("formation"));
-
-		// Image of T-doll (default skin)
-		infoPanel.withImage("https://cdn.discordapp.com/attachments/487029209114345502/" + data.getString("portrait") + ".png");
-
-		// Extra fields
-		infoPanel.appendField("Buff Tiles", data.getString("buff"), false);
-		infoPanel.appendField("Skill - " + data.getJSONObject("skill").getString("name"), data.getJSONObject("skill").getString("effect"), false);
-
-		// T-doll's Exclusive Equipment
-		try {
-			JSONArray equipList = dataJson.getJSONObject(name).getJSONArray("exclusive_equipment");
-			String exclusiveEquips = "";
-			for (int i = 0; i < equipList.length(); i++) {
-				exclusiveEquips += equipList.get(i) + ", ";
+			Iterator<EmbedFieldData> fieldIter = newEmbedData.fields().get().iterator();
+			while (fieldIter.hasNext()) {
+				EmbedFieldData field = fieldIter.next();
+				spec.addField(field.name(), field.value(), field.inline().get());
 			}
-			infoPanel.appendField("Exclusive Equipment", exclusiveEquips.replaceAll(", $", ""), false);
-		} catch (Exception e) {}
-
-		// T-doll's Skins
-		try {
-			JSONArray skinList = dataJson.getJSONObject(name).getJSONArray("skins");
-			String skins = "";
-			for (int i = 0; i < skinList.length(); i++) {
-				skins += skinList.get(i) + ", ";
-			}
-			infoPanel.appendField("Skins", skins.replaceAll(", $", ""), false);
-		} catch (Exception e) {}
-
-		// T-doll's voice actress and illustrator
-		infoPanel.appendField("CV", data.getString("cv"), true);
-		infoPanel.appendField("Illustrator", data.getString("artist"), true);
-
-		// Display "Normal"/"Damaged" CG as footer text
-		infoPanel.withFooter("Normal 1/2");
-
-
-		return infoPanel.build();
+		};
 	}
-	*/
 
 	private Consumer<? super EmbedCreateSpec> displayFairyInfo(String name) {
 
@@ -678,7 +622,7 @@ public class BotGFL extends CommandModule {
 							.addField(skillName, skillEffect, false)
 							.addField("Skill Cost", skillCost, true)
 							.addField("Skill Cooldown", fairySkillCooldown, true)
-							.addField("Live2D", fairySkillCooldown, false)
+							.addField("Live2D", hasL2D, false)
 							.setImage(defaultImgUrl)
 							.setFooter(footerText, null);
 
@@ -698,8 +642,22 @@ public class BotGFL extends CommandModule {
 			
 		/* Local variable referenced from a lambda expression
 		must be final or effectively final */
-		EmbedCreateSpec newEmbedSpec = newEmbed;
-		return spec -> spec = newEmbedSpec;
+		EmbedData newEmbedData = newEmbed.asRequest();
+		return spec -> {
+			spec.setTitle(newEmbedData.title().get())
+				.setUrl(newEmbedData.url().get())
+				.setDescription(newEmbedData.description().get())
+				.setColor(Color.of(newEmbedData.color().get()))
+				.setThumbnail(newEmbedData.thumbnail().get().url().get())
+				.setImage(newEmbedData.image().get().url().get())
+				.setFooter(newEmbedData.footer().get().text(), null);
+
+			Iterator<EmbedFieldData> fieldIter = newEmbedData.fields().get().iterator();
+			while (fieldIter.hasNext()) {
+				EmbedFieldData field = fieldIter.next();
+				spec.addField(field.name(), field.value(), field.inline().get());
+			}
+		};
 	}
 
 	private JsonEmbed.EmbedJsonStringBuilder displayBartendingInfo() {
@@ -745,7 +703,7 @@ public class BotGFL extends CommandModule {
 		mixingInfo.appendField("[Sugar Rush]", "None of the above (Default)");
 
 		// Footer
-		mixingInfo.appendField("**╚∷∷∷∷∷∷∷∷∷♪♪ Night Night ♪♪∷∷∷∷∷∷∷∷∷╝**", "B.T.C.");
+		mixingInfo.appendField("**╚∷∷∷∷∷∷∷∷∷♪♪  Night Night  ♪♪∷∷∷∷∷∷∷∷∷╝**", "B.T.C.");
 
 
 		return mixingInfo;

@@ -21,7 +21,6 @@ public abstract class BotEmbedMessage extends BotMessage {
 		this.USR = usr;
 		this.msg = msg;
 
-		gateway.on(ReactionAddEvent.class).subscribe();
 		addEmojisToMessage(this.msg, this.NAV);
 	}
 

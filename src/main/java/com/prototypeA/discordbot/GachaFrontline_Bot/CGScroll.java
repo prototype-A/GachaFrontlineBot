@@ -6,6 +6,8 @@ import discord4j.core.object.Embed;
 import discord4j.core.object.entity.Message;
 import discord4j.core.object.entity.User;
 import discord4j.core.spec.EmbedCreateSpec;
+import discord4j.discordjson.json.EmbedData;
+import discord4j.discordjson.json.EmbedFieldData;
 import discord4j.rest.util.Color;
 
 import org.json.JSONArray;
@@ -39,30 +41,39 @@ public abstract class CGScroll extends BotEmbedMessage {
 			while (LocalTime.now().isBefore(END_TIME)) {
 				try {
 					this.sleep(1000);
-				} catch (InterruptedException e) {
+				} catch (InterruptedException e1) {
 					Main.displayWarning("CG Scroller sleep interrupted");
-					e.printStackTrace();
+					e1.printStackTrace();
+				} catch (Exception e2) {
+					e2.printStackTrace();
 				}
 			}
 			// After time limit
 			try {
-				this.msg.removeAllReactions();
+				this.msg.removeAllReactions().block();
 				this.join();
-			} catch (InterruptedException e3) {
+			} catch (InterruptedException e1) {
 				Main.displayWarning("Failed to join() CG Scroller");
-				e3.printStackTrace();
+				e1.printStackTrace();
+			} catch (Exception e2) {
+				e2.printStackTrace();
 			}
 		});
 
-		gateway.on(ReactionAddEvent.class).subscribe(event -> {
-			if (event.getUser().block() == this.USR &&
-				event.getMessageId() == this.msg.getId()) {
-				String emoji = event.getEmoji().asUnicodeEmoji().get().toString();
+		this.GATEWAY.on(ReactionAddEvent.class).subscribe(event -> {
+			if (event.getUser().block().getId().equals(this.USR.getId()) &&
+				event.getMessageId().equals(this.msg.getId())) {
+				String emoji = event.getEmoji().asUnicodeEmoji().get().getRaw();
 
+				Embed currEmbed = this.msg.getEmbeds().get(0);
 				if (emoji.equals("⬅")) {
-					this.msg = this.msg.edit(msgSpec -> msgSpec.setEmbed(rebuildEmbed(this.msg.getEmbeds().get(0), false))).block();
+					this.msg = this.msg.edit(msgSpec -> {
+												msgSpec.setEmbed(rebuildEmbed(currEmbed, false));
+											}).block();
 				} else if (emoji.equals("➡")) {
-					this.msg = this.msg.edit(msgSpec -> msgSpec.setEmbed(rebuildEmbed(this.msg.getEmbeds().get(0), true))).block();
+					this.msg = this.msg.edit(msgSpec -> {
+												msgSpec.setEmbed(rebuildEmbed(currEmbed, true));
+											}).block();
 				}
 				redoReacts();
 			}
@@ -165,8 +176,22 @@ public abstract class CGScroll extends BotEmbedMessage {
 
 		/* Local variable referenced from a lambda expression
 		must be final or effectively final */
-		EmbedCreateSpec newEmbedSpec = newEmbed;
-		return spec -> spec = newEmbedSpec;
+		EmbedData newEmbedData = newEmbed.asRequest();
+		return spec -> {
+			spec.setTitle(newEmbedData.title().get())
+				.setUrl(newEmbedData.url().get())
+				.setDescription(newEmbedData.description().get())
+				.setColor(Color.of(newEmbedData.color().get()))
+				.setThumbnail(newEmbedData.thumbnail().get().url().get())
+				.setImage(newEmbedData.image().get().url().get())
+				.setFooter(newEmbedData.footer().get().text(), null);
+
+			Iterator<EmbedFieldData> fieldIter = newEmbedData.fields().get().iterator();
+			while (fieldIter.hasNext()) {
+				EmbedFieldData field = fieldIter.next();
+				spec.addField(field.name(), field.value(), field.inline().get());
+			}
+		};
 	}
 
 	private String[] getPrevImage() {
@@ -180,7 +205,7 @@ public abstract class CGScroll extends BotEmbedMessage {
 	}
 
 	protected void redoReacts() {
-		this.msg.removeAllReactions();
+		this.msg.removeAllReactions().block();
 		addEmojisToMessage(this.msg, NAV);
 	}
 }

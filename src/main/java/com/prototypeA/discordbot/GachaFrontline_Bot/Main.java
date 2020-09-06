@@ -47,7 +47,7 @@ public class Main {
 	 * @param line The line read from the settings file to split and store
 	 */
 	private static void putSetting(String line, HashMap<String, String> map) {
-		String[] pair = line.split(":");
+		String[] pair = line.split(":", 2);
 		pair[0] = pair[0].trim();
 		pair[1] = pair[1].trim();
 		map.put(pair[0], (pair[1] == null) ? "" : pair[1]);
