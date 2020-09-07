@@ -63,7 +63,11 @@ public class BotGFL extends CommandModule {
 			// Format inputted T-Doll name
 			String arg = "";
 			try {
-				arg = getAsOneArg(true).replaceAll("\\s", "").replace(".", "").toLowerCase();
+				arg = getAsOneArg(true).replaceAll("\\s", "")
+										.replace(".", "")
+										.replace("Am ", "")
+										.replace("Gr ", "")
+										.toLowerCase();
 			} catch (Exception e) {}
 
 			// Display T-Doll info
