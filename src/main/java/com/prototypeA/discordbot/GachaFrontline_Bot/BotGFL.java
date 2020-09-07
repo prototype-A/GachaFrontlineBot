@@ -274,12 +274,12 @@ public class BotGFL extends CommandModule {
 
 			return mapInfo;
 		} catch (Exception e) {
-			Main.displayError("Failed to embed map info");
+			sendTempMessage("Failed to embed map info");
 			e.printStackTrace();
 		}
 
 		// Map not found
-		return JsonEmbed.errorEmbedJson("**Map not found**");
+		return JsonEmbed.errorEmbedJson("Map not found");
 	}
 
 	private JSONObject getFairyData(String name) {
@@ -300,7 +300,8 @@ public class BotGFL extends CommandModule {
 		return tdollDataJson.getJSONObject(name);
 	}
 
-	private Consumer<? super EmbedCreateSpec> displayTdollInfo(String name, boolean mod3) {
+	private Consumer<? super EmbedCreateSpec> displayTdollInfo(String name,
+																boolean mod3) {
 
 		JSONObject tdollData = null;
 		JSONObject data = null;
@@ -498,8 +499,8 @@ public class BotGFL extends CommandModule {
 			newEmbed = newEmbed.setFooter("Default 1/2", null);
 		}
 
-		/* Local variable referenced from a lambda expression
-		must be final or effectively final */
+
+		// Build actual embed
 		EmbedData newEmbedData = newEmbed.asRequest();
 		return spec -> {
 			spec.setTitle(newEmbedData.title().get())
@@ -639,9 +640,9 @@ public class BotGFL extends CommandModule {
 											fairyData.getString("reward_reason"),
 											false);
 		}
-			
-		/* Local variable referenced from a lambda expression
-		must be final or effectively final */
+
+	
+		// Build actual embed
 		EmbedData newEmbedData = newEmbed.asRequest();
 		return spec -> {
 			spec.setTitle(newEmbedData.title().get())

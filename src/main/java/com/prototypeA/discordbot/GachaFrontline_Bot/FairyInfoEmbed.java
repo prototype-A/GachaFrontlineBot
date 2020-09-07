@@ -62,7 +62,7 @@ public class FairyInfoEmbed extends CGScroll {
 	}
 
 	protected String getNewFooterText(String[] newImage) {
-		return newImage[0] + (imgIndex + 1) + "/" + IMG_LIST.length;
+		return newImage[0] + " " + (imgIndex + 1) + "/" + IMG_LIST.length;
 	}
 
 	protected String getNewImageUrl(String[] newImage) {
@@ -70,7 +70,8 @@ public class FairyInfoEmbed extends CGScroll {
 	}
 
 	protected String[] getImage() {
-		return new String[]{ new String(new char[imgIndex]).replace("\0", "**") + "* ",
+		return new String[]{ new String(new char[imgIndex])
+												.replace("\0", "**") + "* ",
 								IMG_LIST[imgIndex] };
 	}
 }

@@ -39,11 +39,12 @@ public class TDollInfoEmbed extends CGScroll {
 			cgList = new String[defaultCG.length() + skinList.length() * 2];
 
 			for (int i = defaultCG.length();  i < cgList.length; i = i + 2) {
-				String skinName = (String)skinList.get(i / 2 - 1);
+				String skinName = (String)skinList.get((i - defaultCG.length()) / 2);
 				cgList[i] = skinJson.getJSONObject(skinName).getString("normal");
 				cgList[i + 1] = skinJson.getJSONObject(skinName).getString("damaged");
 			}
 		} catch (Exception e) {
+			e.printStackTrace();
 			// No skins found
 			cgList = new String[defaultCG.length()];
 		} finally {
@@ -87,7 +88,7 @@ public class TDollInfoEmbed extends CGScroll {
 	}
 
 	protected String getNewFooterText(String[] newImage) {
-		return newImage[0] + " " + (imgIndex + 1) + "/" + IMG_LIST.length;
+		return newImage[0] + "  " + (imgIndex + 1) + "/" + IMG_LIST.length;
 	}
 
 	protected String getNewImageUrl(String[] newImage) {
@@ -110,21 +111,21 @@ public class TDollInfoEmbed extends CGScroll {
 		if (skinList != null) {
 			// Determine cg name
 			cgName = (imgIndex <= (defaultCG.length() - 1)) ? "Default" :
-						(String)(skinList.get(imgIndex / 2 - 1));
+						(String)(skinList.get((imgIndex - defaultCG.length()) / 2));
 
 			// Determine cg expression
 			JSONArray cgExpr = defaultCG.names();
 			if (imgIndex <= (cgExpr.length() - 1)) {
-				// Skin expression
+				// Default CG
 				if (((String)(cgExpr.get(imgIndex))).startsWith("*")) {
-					cgName = formatName((String)(cgExpr.get(imgIndex)));
+					// Skin expression
+					cgName = formatName(((String)(cgExpr.get(imgIndex))).replace("*", ""));
 				}
-
 				expression = (" (" +
-							formatName((String)(cgExpr.get(imgIndex))) +
-							") ").replace(" (Normal)", "");
+							formatName(((String)(cgExpr.get(imgIndex))).replace("*", "")) +
+							")");
 			} else {
-				// Damaged or regular skin CG
+				// Skin CG condition (normal/damaged)
 				JSONArray skinNames = skins.names();
 				skins.names().remove(0);
 				JSONArray skinUrlArray = skins.toJSONArray(skinNames);
@@ -133,12 +134,17 @@ public class TDollInfoEmbed extends CGScroll {
 				int skinExprIndex = (imgIndex - cgExpr.length()) % 2;
 				expression = (" (" +
 							formatName((String)(skinUrls.names().get(skinExprIndex))) +
-							") ").replace(" (Normal)", "");
+							")");
 			}
-			
+
+			// Don't show cg name as expression if the same
+			if (expression.equals(" (" + cgName + ")")) {
+				expression = "";
+			} else {
+				expression = expression.replace(" (Normal)", "");
+			}
 		}
 
-		
 
 		return new String[]{ cgName + expression, IMG_LIST[imgIndex] };
 	}
