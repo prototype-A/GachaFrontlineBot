@@ -271,6 +271,8 @@ public class Main {
 					throw new Exception("Test Bot token or command trigger not found");
 				}
 			} else {
+				botToken = settings.get("Token");
+				botTrigger = settings.get("CommandTrigger");
 				if (botToken.equals("") || botTrigger.equals("")) {
 					throw new Exception("Bot token or command trigger not found");
 				}
