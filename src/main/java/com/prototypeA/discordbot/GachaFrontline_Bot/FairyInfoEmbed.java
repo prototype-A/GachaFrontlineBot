@@ -10,7 +10,9 @@ import discord4j.rest.util.Color;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
+import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 
 
 public class FairyInfoEmbed extends CGScroll {
@@ -19,13 +21,17 @@ public class FairyInfoEmbed extends CGScroll {
 
 	public FairyInfoEmbed(GatewayDiscordClient bot, Message msg, User usr,
 							JSONObject cgJson) {
-		super(bot, msg, usr, cgJson);
+		super(bot, msg, usr, cgJson, true);
 	}
 
-	protected String[] buildImgList() {
-		String[] cgList = new String[3];
-		for (int i = 0; i < cgList.length; i++) {
-			cgList[i] = IMG_JSON.getString("" + (i + 1));
+	protected List<ImageCG> buildImgList() {
+		List<ImageCG> cgList = new ArrayList<>();
+		for (int i = 1; i <= 3; i++) {
+			String rating = "*";
+			for (int j = 0; j < i - 1; j++) {
+				rating += "**";
+			}
+			cgList.add(new ImageCG(rating, IMG_JSON.getString("" + i)));
 		}
 
 		return cgList;
@@ -61,17 +67,15 @@ public class FairyInfoEmbed extends CGScroll {
 		}
 	}
 
-	protected String getNewFooterText(String[] newImage) {
-		return newImage[0] + " " + (imgIndex + 1) + "/" + IMG_LIST.length;
+	protected String getNewFooterText(ImageCG newImage) {
+		return newImage.getName() + " " + (imgIndex + 1) + "/" + IMG_LIST.size();
 	}
 
-	protected String getNewImageUrl(String[] newImage) {
-		return URL_HEADER + newImage[1] + ".png";
+	protected String getNewImageUrl(ImageCG newImage) {
+		return URL_HEADER + newImage.getImageUrl() + ".png";
 	}
 
-	protected String[] getImage() {
-		return new String[]{ new String(new char[imgIndex])
-												.replace("\0", "**") + "* ",
-								IMG_LIST[imgIndex] };
+	protected ImageCG getImage() {
+		return IMG_LIST.get(imgIndex);
 	}
 }

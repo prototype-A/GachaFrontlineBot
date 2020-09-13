@@ -10,7 +10,9 @@ import discord4j.rest.util.Color;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
+import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 
 
@@ -22,37 +24,68 @@ public class TDollInfoEmbed extends CGScroll {
 
 	public TDollInfoEmbed(GatewayDiscordClient bot, Message msg, User usr,
 							JSONObject cgJson, boolean mod3) {
-		super(bot, msg, usr, cgJson);
+		super(bot, msg, usr, cgJson, false);
 		this.MOD3 = mod3;
+		this.IMG_LIST = buildImgList();
+		buildImageList(false);
 	}
 
-	protected String[] buildImgList() {
+	protected List<ImageCG> buildImgList() {
+
+		List<ImageCG> cgList = new ArrayList<>();
+
+		// Load default CG
 		JSONObject defaultCG = IMG_JSON.getJSONObject("default");
-		if (MOD3) {
+		if (this.MOD3) {
 			defaultCG = IMG_JSON.getJSONObject("mod3");
 		}
-		String[] cgList = null;
+		JSONArray defaultCGNames = defaultCG.names();
+		JSONArray defaultCGList = defaultCG.toJSONArray(defaultCGNames);
+		for (int i = 0; i < defaultCG.length(); i++) {
+			String cgName = "Default";
+			String cgExpression = (i == 0) ? "" :
+									" (" + 
+									formatName(defaultCGNames.getString(i)) +
+									")";
+			// Alternate CG
+			if (defaultCGNames.getString(i).startsWith("*")) {
+				cgName = formatName(defaultCGNames.getString(i).replace("*", ""));
+				cgExpression = "";
+			}
+
+			cgList.add(new ImageCG(cgName + cgExpression, defaultCGList.getString(i)));
+		}
+
+		// Load skin CG
 		try {
-			// Load skin CG
 			JSONObject skinJson = IMG_JSON.getJSONObject("skins");
 			JSONArray skinList = skinJson.getJSONArray("list");
-			cgList = new String[defaultCG.length() + skinList.length() * 2];
 
-			for (int i = defaultCG.length();  i < cgList.length; i = i + 2) {
-				String skinName = (String)skinList.get((i - defaultCG.length()) / 2);
-				cgList[i] = skinJson.getJSONObject(skinName).getString("normal");
-				cgList[i + 1] = skinJson.getJSONObject(skinName).getString("damaged");
+			JSONArray skinNames = skinJson.names();
+			for (int i = 0; i < skinNames.length(); i++) {
+				// Remove skin list
+				if (skinNames.getString(i).toLowerCase().equals("list")) {
+					skinNames.remove(i);
+					break;
+				}
+			}
+
+			JSONArray skinUrlArray = skinJson.toJSONArray(skinNames);
+			for (int i = 0; i < skinUrlArray.length() * 2; i++) {
+				int skinIndex = i / 2;
+				String skinName = skinNames.getString(skinIndex)
+											.replace(" (Live2D)", "")
+											.replace(" (Simple Live2D)", "");
+				String skinCondition = (i % 2 == 0) ? "" : " (Damaged)";
+				JSONObject skinUrls = skinUrlArray.getJSONObject(skinIndex);
+				String skinUrl = skinUrls.toJSONArray(skinUrls.names())
+											.getString(i % 2);
+
+				cgList.add(new ImageCG(skinName + skinCondition, skinUrl));
 			}
 		} catch (Exception e) {
-			e.printStackTrace();
 			// No skins found
-			cgList = new String[defaultCG.length()];
-		} finally {
-			// Load default CG
-			JSONArray defaultCGList = defaultCG.toJSONArray(defaultCG.names());
-			for (int i = 0; i < defaultCG.length(); i++) {
-				cgList[i] = (String)defaultCGList.get(i);
-			}
+			e.printStackTrace();
 		}
 
 		return cgList;
@@ -87,65 +120,15 @@ public class TDollInfoEmbed extends CGScroll {
 		}
 	}
 
-	protected String getNewFooterText(String[] newImage) {
-		return newImage[0] + "  " + (imgIndex + 1) + "/" + IMG_LIST.length;
+	protected String getNewFooterText(ImageCG newImage) {
+		return newImage.getName() + "  " + (imgIndex + 1) + "/" + IMG_LIST.size();
 	}
 
-	protected String getNewImageUrl(String[] newImage) {
-		return URL_HEADER + newImage[1] + ".png";
+	protected String getNewImageUrl(ImageCG newImage) {
+		return URL_HEADER + newImage.getImageUrl() + ".png";
 	}
 
-	protected String[] getImage() {
-		JSONObject defaultCG = IMG_JSON.getJSONObject("default");
-
-		// Load skins, if any
-		JSONObject skins = IMG_JSON.getJSONObject("skins");
-		JSONArray skinList = null;
-		try {
-			skinList = skins.getJSONArray("list");
-		} catch (Exception e) {}
-
-		// Determine CG name (default or skin)
-		String cgName = "";
-		String expression = "";
-		if (skinList != null) {
-			// Determine cg name
-			cgName = (imgIndex <= (defaultCG.length() - 1)) ? "Default" :
-						(String)(skinList.get((imgIndex - defaultCG.length()) / 2));
-
-			// Determine cg expression
-			JSONArray cgExpr = defaultCG.names();
-			if (imgIndex <= (cgExpr.length() - 1)) {
-				// Default CG
-				if (((String)(cgExpr.get(imgIndex))).startsWith("*")) {
-					// Skin expression
-					cgName = formatName(((String)(cgExpr.get(imgIndex))).replace("*", ""));
-				}
-				expression = (" (" +
-							formatName(((String)(cgExpr.get(imgIndex))).replace("*", "")) +
-							")");
-			} else {
-				// Skin CG condition (normal/damaged)
-				JSONArray skinNames = skins.names();
-				skins.names().remove(0);
-				JSONArray skinUrlArray = skins.toJSONArray(skinNames);
-				int skinIndex = (imgIndex - cgExpr.length()) / 2;
-				JSONObject skinUrls = (JSONObject)skinUrlArray.get(skinIndex);
-				int skinExprIndex = (imgIndex - cgExpr.length()) % 2;
-				expression = (" (" +
-							formatName((String)(skinUrls.names().get(skinExprIndex))) +
-							")");
-			}
-
-			// Don't show cg name as expression if the same
-			if (expression.equals(" (" + cgName + ")")) {
-				expression = "";
-			} else {
-				expression = expression.replace(" (Normal)", "");
-			}
-		}
-
-
-		return new String[]{ cgName + expression, IMG_LIST[imgIndex] };
+	protected ImageCG getImage() {
+		return IMG_LIST.get(imgIndex);
 	}
 }

@@ -39,7 +39,7 @@ public class BotGFL extends CommandModule {
 		//COMMANDS.put("equip", new BotGFL(GFL_COMMAND, "equip"));
 		//COMMANDS.put("equipment", new BotGFL(GFL_COMMAND, "equip"));
 		COMMANDS.put("fairy", new BotGFL(GFL_COMMAND, "fairy"));
-		COMMANDS.put("map", new BotGFL(GFL_COMMAND, "map"));
+		//COMMANDS.put("map", new BotGFL(GFL_COMMAND, "map"));
 		COMMANDS.put("mix", new BotGFL(GFL_COMMAND, "mix"));
 		COMMANDS.put("prod", new BotGFL(GFL_COMMAND, "productiontimer"));
 		COMMANDS.put("production", new BotGFL(GFL_COMMAND, "productiontimer"));
@@ -77,11 +77,11 @@ public class BotGFL extends CommandModule {
 				// Whether to display mod3 info or not
 				arg = arg.replace("-", "");
 				boolean mod3 = false;
-				if (arg.length() >= 5) {
-					if (arg.substring(arg.length() - 4, arg.length()).toLowerCase().equals("mod3")) {
-						mod3 = true;
-						arg = arg.substring(0, arg.length() - 4);
-					}
+				if (arg.length() >= 5 &&
+					arg.substring(arg.length() - 4, arg.length())
+						.toLowerCase().equals("mod3")) {
+					mod3 = true;
+					arg = arg.substring(0, arg.length() - 4);
 				}
 
 				// Start emoji reaction navigation thread for a period of time
@@ -500,9 +500,12 @@ public class BotGFL extends CommandModule {
 
 		// Display current CG/skin name as footer text
 		try {
-			newEmbed = newEmbed.setFooter("Default 1/" + (cg.getJSONObject("default").names().length() + cg.getJSONObject("skins").getJSONArray("list").length() * 2), null);
+			int cgLength = (mod3) ? cg.getJSONObject("mod3").names().length() :
+									cg.getJSONObject("default").names().length();
+			cgLength += cg.getJSONObject("skins").getJSONArray("list").length() * 2;
+			newEmbed = newEmbed.setFooter("Default  1/" + cgLength, null);
 		} catch (Exception e) {
-			newEmbed = newEmbed.setFooter("Default 1/2", null);
+			newEmbed = newEmbed.setFooter("Default  1/2", null);
 		}
 
 
