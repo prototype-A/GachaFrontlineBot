@@ -70,49 +70,45 @@ public class BotHelp extends Command {
 					args[0] = args[0].substring(Main.getKey().length(), args[0].length());
 				}
 
-				if (args.length == 2 && commandLists.get(args[0]) != null) {
-					// Module trigger specified
-					
-				} else {
-					// Find command in all command lists
-					boolean cmdFound = false;
-					Iterator<Map.Entry<String, Map<String, Command>>> listIter = commandLists.entrySet().iterator();
-					while (listIter.hasNext()) {
-						Map.Entry<String, Map<String, Command>> list = listIter.next();
-						if (list.getValue().containsKey(arg)) {
-							try {
-								// Module command
-								CommandModule module = (CommandModule)list.getValue().get(arg);
-								title = "Usage for **'" +
-												module.getModuleTrigger() +
-												" " + arg + "'** command:";
-								helpMessage = list.getValue().get(arg).getHelp();
-								cmdFound = true;
-								break;
-							} catch (Exception e) {
-								// Non-module command
-								title = "Usage for **'" + arg +
-												"'** command:";
-								helpMessage = list.getValue().get(arg).getHelp();
-								cmdFound = true;
-								break;
-							}
-						}
+				// Find command in all command lists
+				boolean cmdFound = false;
+				Iterator<Map.Entry<String, Map<String, Command>>> listIter = commandLists.entrySet().iterator();
+				while (listIter.hasNext()) {
+					Map.Entry<String, Map<String, Command>> list = listIter.next();
+					if (args.length == 2) {
+						try {
+							// Module command
+							String command = args[1];
+							title = "Usage for **'" + args[0] + " " + command +
+									"'** command:";
+							helpMessage = list.getValue().get(command).getHelp();
+							cmdFound = true;
+							break;
+						} catch (Exception e) {}
+					} else {
+						try {
+							// Non-module command
+							title = "Usage for **'" + arg + "'** command:";
+							helpMessage = list.getValue().get(arg).getHelp();
+							cmdFound = true;
+							break;
+						} catch (Exception E) {}
 					}
+				}
 
-					// Command not found
-					if (!cmdFound) {
-						sendTempMessage(spec -> {
-											spec.setColor(Color.of(Integer.parseInt(Main.getParameter("EmbedFailureColor"))))
-												.setDescription("Command '" + arg + "' not found");
-										});
-					}
+				// Command not found
+				if (!cmdFound) {
+					sendTempMessage(spec -> {
+										spec.setColor(Color.of(Integer.parseInt(Main.getParameter("EmbedFailureColor"))))
+											.setDescription("Command '" + arg + "' not found");
+									});
 				}
 			}
 
 			// Send message
 			Color embedColor = Color.of(Integer.parseInt(color));
-			if (this.COMMAND.equals("to-channel")) {
+			if (this.COMMAND.equals("to-channel") &&
+				(!title.equals("") && !helpMessage.equals(""))) {
 				// To guild
 				String embedTitle = title;
 				String embedBody = helpMessage;
