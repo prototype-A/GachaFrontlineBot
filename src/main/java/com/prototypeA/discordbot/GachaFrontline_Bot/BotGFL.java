@@ -7,9 +7,7 @@ import discord4j.discordjson.json.EmbedFieldData;
 import discord4j.rest.util.Color;
 
 import org.json.JSONArray;
-import org.json.JSONException;
 import org.json.JSONObject;
-import org.json.simple.parser.JSONParser;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -27,7 +25,7 @@ public class BotGFL extends CommandModule {
 	private static JSONObject equipTimerDataJson;
 	//private JSONObject equipDataJson;
 	private static JSONObject mapDataJson;
-	private final static String URL_HEADER = Main.getParameter("AssetHeader");
+	private final static String URL_HEADER = Main.getParameter("GFLAssetHeader");
 	private final static String GFL_COMMAND = Main.getParameter("GFLCommand");
 
 
@@ -112,19 +110,24 @@ public class BotGFL extends CommandModule {
 				//sendMessage(displayEquipmentInfo(arg));
 			} else if (this.SUBCOMMAND.equals("timer")) {
 				// Display both potential T-Doll and equipment from a given timer
-				JsonEmbed.embedAsWebhook(Main.getParameter("TimerWebhook"), embedEquipmentTdollsFromTimer(arg));
+				JsonEmbed.embedAsWebhook(Main.getParameter("GFLTimerWebhook"),
+											embedEquipmentTdollsFromTimer(arg));
 			} else if (this.SUBCOMMAND.equals("constructiontimer")) {
 				// Display potential T-Doll from given construction timer
-				JsonEmbed.embedAsWebhook(Main.getParameter("TimerWebhook"), embedTdollsFromTimer(arg));
+				JsonEmbed.embedAsWebhook(Main.getParameter("GFLTimerWebhook"),
+											embedTdollsFromTimer(arg));
 	 		} else if (this.SUBCOMMAND.equals("productiontimer")) {
 				// Display potential equipment from given production timer
-				JsonEmbed.embedAsWebhook(Main.getParameter("TimerWebhook"), embedEquipmentFromTimer(arg));
+				JsonEmbed.embedAsWebhook(Main.getParameter("GFLTimerWebhook"),
+											embedEquipmentFromTimer(arg));
 			} else if (this.SUBCOMMAND.equals("map")) {
 				// Display specified map info
-				JsonEmbed.embedAsWebhook(Main.getParameter("MapWebhook"), displayMapInfo(arg));
+				JsonEmbed.embedAsWebhook(Main.getParameter("GFLMapWebhook"),
+											displayMapInfo(arg));
 			} else if (this.SUBCOMMAND.equals("mix")) {
 				// Display VA11 Ha11-A drink combinations
-				JsonEmbed.embedAsWebhook(Main.getParameter("BartenderWebhook"), displayBartendingInfo());
+				JsonEmbed.embedAsWebhook(Main.getParameter("GFLBartenderWebhook"),
+											displayBartendingInfo());
 			}
 		}
 	}
@@ -509,23 +512,7 @@ public class BotGFL extends CommandModule {
 		}
 
 
-		// Build actual embed
-		EmbedData newEmbedData = newEmbed.asRequest();
-		return spec -> {
-			spec.setTitle(newEmbedData.title().get())
-				.setUrl(newEmbedData.url().get())
-				.setDescription(newEmbedData.description().get())
-				.setColor(Color.of(newEmbedData.color().get()))
-				.setThumbnail(newEmbedData.thumbnail().get().url().get())
-				.setImage(newEmbedData.image().get().url().get())
-				.setFooter(newEmbedData.footer().get().text(), null);
-
-			Iterator<EmbedFieldData> fieldIter = newEmbedData.fields().get().iterator();
-			while (fieldIter.hasNext()) {
-				EmbedFieldData field = fieldIter.next();
-				spec.addField(field.name(), field.value(), field.inline().get());
-			}
-		};
+		return buildEmbedCreateSpec(newEmbed);
 	}
 
 	private Consumer<? super EmbedCreateSpec> displayFairyInfo(String name) {
@@ -651,23 +638,7 @@ public class BotGFL extends CommandModule {
 		}
 
 	
-		// Build actual embed
-		EmbedData newEmbedData = newEmbed.asRequest();
-		return spec -> {
-			spec.setTitle(newEmbedData.title().get())
-				.setUrl(newEmbedData.url().get())
-				.setDescription(newEmbedData.description().get())
-				.setColor(Color.of(newEmbedData.color().get()))
-				.setThumbnail(newEmbedData.thumbnail().get().url().get())
-				.setImage(newEmbedData.image().get().url().get())
-				.setFooter(newEmbedData.footer().get().text(), null);
-
-			Iterator<EmbedFieldData> fieldIter = newEmbedData.fields().get().iterator();
-			while (fieldIter.hasNext()) {
-				EmbedFieldData field = fieldIter.next();
-				spec.addField(field.name(), field.value(), field.inline().get());
-			}
-		};
+		return buildEmbedCreateSpec(newEmbed);
 	}
 
 	private JsonEmbed.EmbedJsonStringBuilder displayBartendingInfo() {
@@ -720,30 +691,12 @@ public class BotGFL extends CommandModule {
 	}
 
 	private void loadJson() {
-		tdollDataJson = loadJsonFile("TdollData.json");
-		fairyDataJson = loadJsonFile("FairyData.json");
-		tdollTimerDataJson = loadJsonFile("TdollTimers.json");
-		equipTimerDataJson = loadJsonFile("EquipTimers.json");
-		//equipDataJson = loadJsonFile("EquipmentData.json");
-		mapDataJson = loadJsonFile("MapData.json");
-	}
-
-	private JSONObject loadJsonFile(String fileName) {
-
-		try {
-			String dataPath = System.getProperty("user.dir") + "/data/GFL/";
-
-			// Load data
-			return new JSONObject(new Scanner(new File(dataPath + fileName)).useDelimiter("\\A").next());
-
-		} catch (FileNotFoundException e) {
-			Main.displayError("Data does not exist");
-		} catch (Exception e) {
-			Main.displayError(e.getMessage() + " occurred while attempting to read the data");
-			e.printStackTrace();
-		}
-
-		return null;
+		tdollDataJson = loadJsonFile("/data/GFL/TdollData.json");
+		fairyDataJson = loadJsonFile("/data/GFL/FairyData.json");
+		tdollTimerDataJson = loadJsonFile("/data/GFL/TdollTimers.json");
+		equipTimerDataJson = loadJsonFile("/data/GFL/EquipTimers.json");
+		//equipDataJson = loadJsonFile("/data/GFL/EquipmentData.json");
+		mapDataJson = loadJsonFile("/data/GFL/MapData.json");
 	}
 
 

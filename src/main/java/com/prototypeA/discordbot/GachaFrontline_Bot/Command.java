@@ -1,8 +1,14 @@
 package com.prototypeA.discordbot.GachaFrontline_Bot;
 
 import discord4j.core.GatewayDiscordClient;
+import discord4j.core.spec.EmbedCreateSpec;
+import discord4j.discordjson.json.EmbedData;
+import discord4j.discordjson.json.EmbedFieldData;
 import discord4j.core.object.entity.Message;
 import discord4j.core.object.entity.Role;
+import discord4j.rest.util.Color;
+
+import org.json.JSONObject;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -11,6 +17,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Scanner;
+import java.util.function.Consumer;
 
 
 public abstract class Command extends BotMessage implements Runnable {
@@ -144,10 +151,63 @@ public abstract class Command extends BotMessage implements Runnable {
 	}
 
 	/**
-	 * Sends a message when a user with insufficient permissions tries to issue a bot command
+	 * Sends a message when a user with insufficient permissions
+	 * tries to issue a bot command
 	 */
 	protected void sendNoPermissionsMessage() {
 		sendMessage("You do not have the permissions to use this command.");
+	}
+
+	/**
+	 * Reads in a specified JSON file from the same directory as the
+	 * executable
+	 * 
+	 * @param fileName The name of the .json file (including subpath in executable directory) to load
+	 */
+	protected JSONObject loadJsonFile(String fileName) {
+		String dataPath = System.getProperty("user.dir");
+		try {
+			// Load data
+			return new JSONObject(new Scanner(new File(dataPath + fileName)).useDelimiter("\\A").next());
+		} catch (FileNotFoundException e) {
+			Main.displayError("File \"" + dataPath + fileName + "\" does not exist");
+		} catch (Exception e) {
+			Main.displayError(e.getMessage() + " occurred while attempting to read the data");
+			e.printStackTrace();
+		}
+
+		return null;
+	}
+
+	/**
+	 * Copies and builds the actual EmbedCreateSpec to be sent
+	 * as an embed message, due to issues with sending the
+	 * original
+	 * 
+	 * @param newEmbed The EmbedCreateSpec to copy
+	 */
+	protected Consumer<? super EmbedCreateSpec> buildEmbedCreateSpec(EmbedCreateSpec newEmbed) {
+
+		// Get embed data
+		EmbedData newEmbedData = newEmbed.asRequest();
+
+		return spec -> {
+			// Base embed
+			spec.setTitle(newEmbedData.title().get())
+				.setUrl(newEmbedData.url().get())
+				.setDescription(newEmbedData.description().get())
+				.setColor(Color.of(newEmbedData.color().get()))
+				.setThumbnail(newEmbedData.thumbnail().get().url().get())
+				.setImage(newEmbedData.image().get().url().get())
+				.setFooter(newEmbedData.footer().get().text(), null);
+
+			// Additional fields
+			Iterator<EmbedFieldData> fieldIter = newEmbedData.fields().get().iterator();
+			while (fieldIter.hasNext()) {
+				EmbedFieldData field = fieldIter.next();
+				spec.addField(field.name(), field.value(), field.inline().get());
+			}
+		};
 	}
 
 	/**

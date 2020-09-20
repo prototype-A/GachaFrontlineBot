@@ -30,7 +30,7 @@ public class Main {
 				String setting = reader.nextLine();
 
 				// Ignore empty lines or lines that start with a '#' (comment)
-				if (setting.trim() != "" || setting.charAt(0) == '#') {
+				if (!(setting.trim().equals("") || setting.charAt(0) == '#')) {
 					putSetting(setting, settings);
 				}
 			}
@@ -151,10 +151,10 @@ public class Main {
 				writer.write(setting + ": " + value);
 				writer.close();
 			} catch (Exception e) {
-				displayError("Failed to create new settings file for server ID" + serverID, e);
+				displayError("Failed to create new settings file for server " + serverID, e);
 			}
 		} catch (IOException e2) {
-			displayError("Failed to write server ID " + serverID + "'s settings", e2);
+			displayError("Failed to write server " + serverID + "'s settings", e2);
 		}
 	}
 

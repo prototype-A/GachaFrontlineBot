@@ -95,8 +95,7 @@ public class Instance {
 				if (commandThread != null) {
 					commandThread.start();
 				} else {
-					Main.displayMessage("Command " + command + " " +
-										subcommand + " not found");
+					//Main.displayMessage("Command " + command + " " + subcommand + " not found");
 				}
 			}
 		});
@@ -144,6 +143,7 @@ public class Instance {
 		// Add module commands
 		modules = new TreeMap<>();
 		modules.put(Main.getParameter("GFLCommand"), new BotGFL());
+		modules.put(Main.getParameter("E7Command"), new BotE7());
 		initModuleCommands(commandLists);
 	}
 

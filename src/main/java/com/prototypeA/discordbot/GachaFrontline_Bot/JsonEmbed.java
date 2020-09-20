@@ -167,6 +167,7 @@ public class JsonEmbed {
 			DataOutputStream outStream = new DataOutputStream(webhookConnection.getOutputStream());
 
 			//Main.displayMessage("Sending\u001B[1m\033[1;35m POST\033[1;0m\u001B[0m request to webhook: " + webhookUrl);
+			//Main.displayMessage(content);
 
 			// Send message
 			outStream.write(content.getBytes("UTF-8"));
