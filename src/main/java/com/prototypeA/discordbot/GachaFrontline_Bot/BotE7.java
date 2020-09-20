@@ -73,13 +73,21 @@ public class BotE7 extends CommandModule {
 		for (int i = 0; i < rarity; i++) {
 			artifactRarity += "🟊";
 		}
-		String artifactDesc = artifactRarity + " ";
+		String artifactDesc = artifactRarity + "\\n";
 
 		// Artifact class restriction
 		try {
 			artifactDesc += artifactJson.getString("class_restriction") +
 							" Exclusive";
 		} catch (Exception e) {}
+
+		// Limited artifact
+		try {
+			// Only boolean value is false, which means not limited
+			artifactJson.getBoolean("limited");
+		} catch (Exception e) {
+			artifactDesc += "\\n" + artifactJson.getString("limited");
+		}
 
 		// Embed color
 		String embedColor = "16730837";
@@ -93,6 +101,10 @@ public class BotE7 extends CommandModule {
 		String artifactImgUrl = URL_HEADER + artifactJson.getString("img") +
 								".png";
 
+		// Lore
+		String artifactLore = artifactJson.getString("desc")
+											.replace("\"", "\\\"");
+
 		// Build Embed
 		JsonEmbed.EmbedJsonStringBuilder artifactInfo = new JsonEmbed.EmbedJsonStringBuilder();
 		artifactInfo.withTitle(artifactName)
@@ -100,12 +112,13 @@ public class BotE7 extends CommandModule {
 					.withDesc(artifactDesc)
 					.withColor(embedColor)
 					.withThumbnail(artifactThumbnailUrl)
-					.withImage(artifactImgUrl);
+					.withImage(artifactImgUrl)
+					.withFooter(artifactLore);
 
 		// Stats
-		String hpStat = "" + artifactJson.getInt("hp_base") + " - " +
+		String hpStat = "" + artifactJson.getInt("hp_base") + " ~ " +
 						artifactJson.getInt("hp_max");
-		String attackStat = "" + artifactJson.getInt("atk_base") + " - " +
+		String attackStat = "" + artifactJson.getInt("atk_base") + " ~ " +
 							artifactJson.getInt("atk_max");
 		artifactInfo.appendField("HP", hpStat, true);
 		artifactInfo.appendField("Attack", attackStat, true);
