@@ -12,6 +12,7 @@ import java.util.function.Consumer;
 public class BotE7 extends CommandModule {
 
 	private static JSONObject artifactDataJson;
+	private static JSONObject catalystDataJson;
 	private final static String URL_HEADER = Main.getParameter("E7AssetHeader");
 	private final static String E7_COMMAND = Main.getParameter("E7Command");
 
@@ -20,6 +21,7 @@ public class BotE7 extends CommandModule {
 
 		// Add available commands to list
 		COMMANDS.put("artifact", new BotE7(E7_COMMAND, "artifact"));
+		COMMANDS.put("catalyst", new BotE7(E7_COMMAND, "catalyst"));
 	}
 
 	public BotE7(String command, String subcommand) {
@@ -39,11 +41,21 @@ public class BotE7 extends CommandModule {
 				// Display artifact info
 				JsonEmbed.embedAsWebhook(Main.getParameter("E7ArtifactWebhook"),
 											embedArtifactInfo(arg));
+			} else if (this.SUBCOMMAND.equals("catalyst")) {
+				// Display catalyst info
+				JsonEmbed.embedAsWebhook(Main.getParameter("E7CatalystWebhook"),
+											embedCatalystInfo(arg));
 			}
 		}
 
 	}
 
+	/**
+	 * Retrieves the data of the specified artifact
+	 *
+	 * @param name The name of the artifact to retrieve
+	 * @return The JSONObject containing the specified artifact's data
+	 */
 	private JSONObject getArtifactData(String name) {
 		try {
 			// Check if short name
@@ -54,6 +66,23 @@ public class BotE7 extends CommandModule {
 		return artifactDataJson.getJSONObject(name);
 	}
 
+	/**
+	 * Retrieves the data of the specified catalyst
+	 *
+	 * @param name The name of the catalyst to retrieve
+	 * @return The JSONObject containing the specified catalyst's data
+	 */
+	private JSONObject getCatalystData(String name) {
+		try {
+			// Check if short name
+			return catalystDataJson.getJSONObject(catalystDataJson.getJSONObject(name)
+																	.getString("data"));
+		} catch (Exception e) {}
+
+		return catalystDataJson.getJSONObject(name);
+	}
+
+	
 	private JsonEmbed.EmbedJsonStringBuilder embedArtifactInfo(String name) {
 
 		JSONObject artifactJson = getArtifactData(name);
@@ -89,9 +118,6 @@ public class BotE7 extends CommandModule {
 			artifactDesc += "\\n" + artifactJson.getString("limited");
 		}
 
-		// Embed color
-		String embedColor = "16730837";
-
 		// Thumbnail
 		String artifactThumbnailUrl = URL_HEADER +
 										artifactJson.getString("img_small") +
@@ -110,7 +136,7 @@ public class BotE7 extends CommandModule {
 		artifactInfo.withTitle(artifactName)
 					.withUrl(artifactUrl)
 					.withDesc(artifactDesc)
-					.withColor(embedColor)
+					.withColor("16730837")
 					.withThumbnail(artifactThumbnailUrl)
 					.withImage(artifactImgUrl)
 					.withFooter(artifactLore);
@@ -138,13 +164,96 @@ public class BotE7 extends CommandModule {
 		return artifactInfo;
 	}
 
-	private void loadJson() {
-		artifactDataJson = loadJsonFile("/data/E7/Artifacts.json");
+
+	private JsonEmbed.EmbedJsonStringBuilder embedCatalystInfo(String name) {
+
+		JSONObject catalystJson = getCatalystData(name);
+
+		// Catalyst name
+		String catalystName = catalystJson.getString("name");
+
+		// Link to E7x
+		String catalystUrl = "https://epic7x.com/material/" +
+								catalystName.replace(" ", "-")
+											.toLowerCase();
+
+		// Rarity
+		String rarity = catalystJson.getString("rarity");
+
+		// Embed color
+		String embedColor = (rarity.equals("Epic")) ? "11216674" : "4680066";
+
+		// Thumbnail
+		String catalystThumbnailUrl = URL_HEADER +
+										catalystJson.getString("img") +
+										".jpg";
+
+		// Embed body
+		String catalystBody = rarity +
+								" Catalyst\\n" +
+								"Used to Awaken and Skill Enhance " +
+								catalystJson.getString("horoscope") +
+								" Characters";
+
+		// Description footer
+		String catalystDesc = catalystJson.getString("desc");
+
+		// Build Embed
+		JsonEmbed.EmbedJsonStringBuilder catalystInfo = new JsonEmbed.EmbedJsonStringBuilder();
+		catalystInfo.withTitle(catalystName)
+					.withUrl(catalystUrl)
+					.withDesc(catalystBody)
+					.withColor(embedColor)
+					.withThumbnail(catalystThumbnailUrl)
+					.withFooter(catalystDesc);
+
+		// AP Shop locations
+		String apShopTitle = "AP Shops";
+		String catalystApShopTitle = (rarity.equals("Epic")) ?
+										apShopTitle + " (2x 400 AP)":
+										apShopTitle + " (5x 120 AP)";
+		catalystInfo.appendField(catalystApShopTitle,
+									catalystJson.getString("ap_shops")
+												.replace(", ", "\\n"),
+									true);
+
+		// Episode 1 drop locations
+		String ep1DropTitle = "Episode 1";
+		String catalystEp1DropTitle = (rarity.equals("Epic")) ?
+										ep1DropTitle + " UH" :
+										ep1DropTitle + " (+ UH)";
+		catalystInfo.appendField(catalystEp1DropTitle,
+									catalystJson.getString("ep1_drops")
+												.replace(", ", "\\n"),
+									true);
+
+		// Episode 2 drop locations
+		try {
+			catalystInfo.appendField("Episode 2",
+										catalystJson.getString("ep1_drops")
+													.replace(", ", "\\n"),
+										true);
+		} catch (Exception e) {}
+
+		return catalystInfo;
 	}
 
+	/**
+	 * Loads the .json files required by this module
+	 */
+	private void loadJson() {
+		artifactDataJson = loadJsonFile("/data/E7/Artifacts.json");
+		catalystDataJson = loadJsonFile("/data/E7/Catalysts.json");
+	}
+
+	/**
+	 * Returns help messages for this module's commands
+	 */
 	public String getHelp() {
 		if (this.SUBCOMMAND.equals("artifact")) {
-			return BotHelp.formatModuleHelpMessage(this.COMMAND, "artifact", "artifact_name", "Displays detailed information of the specified artifact.");
+			return BotHelp.formatModuleHelpMessage(this.COMMAND, this.SUBCOMMAND, "artifact_name", "Displays detailed information of the specified artifact.");
+		} else if (this.SUBCOMMAND.equals("catalyst")) {
+			return BotHelp.formatModuleHelpMessage(this.COMMAND, this.SUBCOMMAND, "catalyst_name", "Displays detailed information of the specified catalyst.");
 		}
 
 		return "";
