@@ -85,7 +85,13 @@ public class BotE7 extends CommandModule {
 	
 	private JsonEmbed.EmbedJsonStringBuilder embedArtifactInfo(String name) {
 
-		JSONObject artifactJson = getArtifactData(name);
+		// Get artifact data
+		JSONObject artifactJson = null;
+		try {
+			artifactJson = getArtifactData(name);
+		} catch (Exception e) {
+			return JsonEmbed.errorEmbedJson("That artifact does not appear to exist");
+		}
 
 		// Artifact name
 		String artifactName = artifactJson.getString("name");
@@ -167,7 +173,13 @@ public class BotE7 extends CommandModule {
 
 	private JsonEmbed.EmbedJsonStringBuilder embedCatalystInfo(String name) {
 
-		JSONObject catalystJson = getCatalystData(name);
+		// Get catalyst data
+		JSONObject catalystJson = null;
+		try {
+			catalystJson = getCatalystData(name);
+		} catch (Exception e) {
+			return JsonEmbed.errorEmbedJson("Catalyst not found");
+		}
 
 		// Catalyst name
 		String catalystName = catalystJson.getString("name");
@@ -230,7 +242,7 @@ public class BotE7 extends CommandModule {
 		// Episode 2 drop locations
 		try {
 			catalystInfo.appendField("Episode 2",
-										catalystJson.getString("ep1_drops")
+										catalystJson.getString("ep2_drops")
 													.replace(", ", "\\n"),
 										true);
 		} catch (Exception e) {}
