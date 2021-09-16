@@ -1,11 +1,11 @@
 package com.prototypeA.discordbot.GachaFrontline_Bot;
 
 import discord4j.core.GatewayDiscordClient;
+import discord4j.core.object.entity.Message;
+import discord4j.core.object.entity.Role;
 import discord4j.core.spec.EmbedCreateSpec;
 import discord4j.discordjson.json.EmbedData;
 import discord4j.discordjson.json.EmbedFieldData;
-import discord4j.core.object.entity.Message;
-import discord4j.core.object.entity.Role;
 import discord4j.rest.util.Color;
 
 import org.json.JSONObject;
@@ -16,25 +16,58 @@ import java.lang.InterruptedException;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Scanner;
 import java.util.function.Consumer;
 
 
-public abstract class Command extends BotMessage implements Runnable {
+public abstract class Command extends Messaging implements Runnable {
 
-	protected final String COMMAND;
+	public enum CommandType { GUILD, PM };
+
+	public final String COMMAND;
+	public final String SUBCOMMAND;
+	public final CommandType[] commandTypes;
+	protected Map<String, String> aliases;
 
 
-	public Command(String command) {
+	public Command(String command, String subcommand, CommandType[] commandTypes) {
 		this.COMMAND = command;
+		this.SUBCOMMAND = subcommand;
+		this.commandTypes = commandTypes;
+		aliases = new HashMap<String, String>();
 	}
 
-	protected void init(Message message, GatewayDiscordClient gateway) {
-		super.init(message, gateway);
+
+	/**
+	 * Adds an alias to which the command can also be called by
+	 *
+	 * @param command The (potential) alias for the main command
+	 * @param subcommand The (potential) alias for the sub command
+	 */
+	protected void addAlias(String command, String subcommand) {
+		aliases.put(command, subcommand);
 	}
 
+	/**
+	 * Gets the list of aliases for this command
+	 *
+	 * @return The list of command/subcommand aliases for this command
+	 */
+	public Map<String, String> getAliases() {
+		return aliases;
+	}
+
+	/**
+	 * The functionality of the command when it is executed
+	 */
 	public abstract void run();
 
+	/**
+	 * Returns help outlining the usage of this command
+	 *
+	 * @return The help message of this command
+	 */
 	public abstract String getHelp();
 
 	/**
@@ -49,7 +82,7 @@ public abstract class Command extends BotMessage implements Runnable {
 		String[] args = new String[0];
 
 		// Check if there is any spaces => there are arguments passed
-		String messageContents = cmdMessage.getContent();
+		String messageContents = commandMessage.getContent();
 		if (messageContents.contains(" ")) {
 			// Store words in message as arguments, splitting on space
             args = messageContents.substring(messageContents.indexOf(' ') + 1).split(" ");
@@ -70,7 +103,7 @@ public abstract class Command extends BotMessage implements Runnable {
 		String arg = null;
 
 		// Check if there is any spaces => there are arguments passed
-		String content = cmdMessage.getContent();
+		String content = commandMessage.getContent();
 		if (content.contains(" ")) {
 			int firstSpaceIndex = content.indexOf(" ");
 			int secondSpaceIndex = content.indexOf(" ", firstSpaceIndex + 1);
@@ -106,9 +139,9 @@ public abstract class Command extends BotMessage implements Runnable {
 	protected boolean userHasRole(String roleName) {
 		try {
 			// Fetch the user's roles in the server
-			List<Role> roleList = cmdMessage.getGuild()
+			List<Role> roleList = commandMessage.getGuild()
 									.block()
-									.getMemberById(cmdMessage.getAuthor()
+									.getMemberById(commandMessage.getAuthor()
 										.get()
 										.getId())
 									.block()
@@ -170,9 +203,9 @@ public abstract class Command extends BotMessage implements Runnable {
 			// Load data
 			return new JSONObject(new Scanner(new File(dataPath + fileName)).useDelimiter("\\A").next());
 		} catch (FileNotFoundException e) {
-			Main.displayError("File \"" + dataPath + fileName + "\" does not exist");
+			ConsoleUtils.printError("File \"" + dataPath + fileName + "\" does not exist");
 		} catch (Exception e) {
-			Main.displayError(e.getMessage() + " occurred while attempting to read the data");
+			ConsoleUtils.printError(e.getMessage() + " occurred while attempting to read the data");
 			e.printStackTrace();
 		}
 
@@ -185,8 +218,8 @@ public abstract class Command extends BotMessage implements Runnable {
 	 * original
 	 * 
 	 * @param newEmbed The EmbedCreateSpec to copy
-	 */
-	protected Consumer<? super EmbedCreateSpec> buildEmbedCreateSpec(EmbedCreateSpec newEmbed) {
+	 *
+	protected EmbedCreateSpec buildEmbedCreateSpec(EmbedCreateSpec newEmbed) {
 
 		// Get embed data
 		EmbedData newEmbedData = newEmbed.asRequest();
@@ -208,7 +241,7 @@ public abstract class Command extends BotMessage implements Runnable {
 				spec.addField(field.name(), field.value(), field.inline().get());
 			}
 		};
-	}
+	}*/
 
 	/**
 	 * Output a warning to the command line when bot does not have the 

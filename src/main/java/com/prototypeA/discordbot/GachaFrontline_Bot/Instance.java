@@ -12,129 +12,183 @@ import discord4j.core.object.entity.channel.Channel;
 import discord4j.core.object.entity.channel.MessageChannel;
 import discord4j.core.object.entity.Message;
 
+import org.reflections.Reflections;
+
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.TreeMap;
+import java.util.Set;
 
 
 public class Instance {
 
-	private final String TOKEN; // The bot's login token
+	private final String BOT_TOKEN; // The bot's login token
 	private final String CMD_TRIGGER; // The symbol(s) to invoke bot commands
 	private final DiscordClient client;
 	private final GatewayDiscordClient gateway;
+
 	private static Map<String, Command> pmCommands;
 	private static Map<String, Command> guildCommands;
-	private static Map<String, CommandModule> modules;
+	//private static Map<String, CommandModule> modules;
 
 
 	public Instance(String token, String trigger) {
 		// Set bot parameters
-		TOKEN = token;
+		BOT_TOKEN = token;
 		CMD_TRIGGER = trigger;
 
 		// Initialize bot commands
 		initCommands();
+
+		ConsoleUtils.printMessage("Logging in...");
 		
 		// Attempt to log in
-		client = DiscordClient.create(TOKEN);
+		client = DiscordClient.create(BOT_TOKEN);
 		gateway = client.login()
 						.block();
-		Main.displayMessage("Login successful.");
 
-		// Subscribe to events
+		// Subscribe to Discord events
 		subscribeToEvents();
-	}
 
-	/**
-	 * Subscribes the bot to Discord4J events
-	 */
-	public void subscribeToEvents() {
-		Main.displayMessage("Starting event subscription...");
-
-		gateway.on(MessageCreateEvent.class).subscribe(event -> {
-			final Message message = event.getMessage();
-			String messageContents = message.getContent();
-
-			// Check if user tried to issue a bot command
-			if (messageContents.startsWith(CMD_TRIGGER)) {
-				// Validate issued bot command
-				String command = getCommand(messageContents);
-				String subcommand = getCommand(messageContents, true);
-				MessageChannel channel = event.getMessage()
-												.getChannel()
-												.block();
-
-				Thread commandThread = null;
-
-				// Find command to run
-				if (channel.getType() == Channel.Type.DM &&
-					pmCommands.containsKey(command)) {
-					// PM Command
-					Command pmCommand = pmCommands.get(command);
-					pmCommand.init(message, gateway);
-					commandThread = new Thread(pmCommand);
-				} else if (guildCommands.containsKey(command) && channel != null) {
-					// Valid generic guild command
-					Command guildCommand = guildCommands.get(command);
-					guildCommand.init(message, gateway);
-					commandThread = new Thread(guildCommand);
-				} else {
-					// Search for command in modules
-					try {
-						Command moduleCommand = modules.get(command)
-														.getCommandList()
-														.get(subcommand);
-						moduleCommand.init(message, gateway);
-						commandThread = new Thread(moduleCommand);
-					} catch (Exception e) {}
-				}
-
-				// Run the command if found
-				if (commandThread != null) {
-					commandThread.start();
-				} else {
-					//Main.displayMessage("Command " + command + " " + subcommand + " not found");
-				}
-			}
-		});
-
-		gateway.on(DisconnectEvent.class).subscribe(event -> {
-			Main.displayWarning("Gateway connection interrupted.");
-		});
-
-		gateway.on(ReadyEvent.class).subscribe(event -> {
-			Main.displayMessage("Bot Ready.");
-		});
-
-		gateway.on(ReconnectEvent.class).subscribe(event -> {
-			Main.displayMessage("Gateway connection successfully re-established.");
-		});
-
-		gateway.on(ReconnectFailEvent.class).subscribe(event -> {
-			Main.displayMessage("Reconnection attempt #" + event.getCurrentAttempt() + " failed.");
-		});
-
-		gateway.on(ReconnectStartEvent.class).subscribe(event -> {
-			Main.displayMessage("Gateway attempting reconnection...");
-		});
-
-
-		Main.displayMessage("Event subscription completed.");
-
+		ConsoleUtils.printMessage("Login successful. Bot Ready.");
 
 		// Block until client gateway disconnects
 		gateway.onDisconnect().block();
 	}
 
 	/**
+	 * Subscribes the bot to Discord4J events
+	 */
+	public void subscribeToEvents() {
+		ConsoleUtils.printMessage("Starting Discord event subscription...");
+
+		// When a message is sent by a user
+		gateway.on(MessageCreateEvent.class).subscribe(event -> {
+			final Message message = event.getMessage();
+			String messageContents = message.getContent();
+			MessageChannel channel = message.getChannel().block();
+
+			// Check for custom server command trigger
+			String guildId = (message.getGuildId().isPresent() ? message.getGuildId().get().asString() : null);
+			String trigger = Main.getServerParameter(guildId, "CommandTrigger");
+			if (trigger == null) {
+				// No custom trigger defined; use default bot trigger
+				trigger = CMD_TRIGGER;
+			}
+
+			// Check if user tried to issue a bot command
+			if (messageContents.startsWith(trigger)) {
+				String command = getCommand(messageContents);
+				String subcommand = getSubCommand(messageContents);
+
+				// Find command to run
+				Command botCommand = null;
+				if (channel.getType() == Channel.Type.DM &&
+					pmCommands.containsKey(command)) {
+					// PM Command
+					botCommand = pmCommands.get(command);
+				} else if (channel.getType() == Channel.Type.GUILD_TEXT &&
+							guildCommands.containsKey(command)) {
+					// Guild command
+					botCommand = guildCommands.get(command);
+				}
+
+				// Run the command if found
+				if (command != null) {
+					botCommand.init(message);
+					Thread commandThread = new Thread(botCommand);
+					commandThread.start();
+				}
+			}
+		});
+
+		gateway.on(DisconnectEvent.class).subscribe(event -> {
+			ConsoleUtils.printWarning("Gateway connection interrupted.");
+		});
+
+		gateway.on(ReadyEvent.class).subscribe(event -> {
+			ConsoleUtils.printMessage("Bot Ready.");
+		});
+
+		gateway.on(ReconnectFailEvent.class).subscribe(event -> {
+			ConsoleUtils.printMessage("Reconnection attempt #" + event.getCurrentAttempt() + " failed.");
+		});
+
+		/* Discord will automatically keep check connection after a set period of time
+		gateway.on(ReconnectStartEvent.class).subscribe(event -> {
+			ConsoleUtils.printMessage("Gateway attempting reconnection...");
+		});
+
+		gateway.on(ReconnectEvent.class).subscribe(event -> {
+			ConsoleUtils.printMessage("Gateway connection successfully re-established.");
+		});
+		*/
+
+
+		ConsoleUtils.printMessage("Event subscription completed.");
+	}
+
+	/**
 	 * Initializes all of the bot's available commands
 	 */
 	private void initCommands() {
+		ConsoleUtils.printMessage("Loading bot commands...");
+
+		guildCommands = new HashMap<String, Command>();
+		pmCommands = new HashMap<String, Command>();
+
+		// Use reflection to find all subclasses of the Command class
+		Reflections reflections = new Reflections("com.prototypeA.discordbot.GachaFrontline_Bot");
+		Set<Class<? extends Command>> commands = reflections.getSubTypesOf(Command.class);
+
+		for (Class<? extends Command> commandClass: commands) {
+			try {
+				Command command = commandClass.newInstance();
+				String subcommand = command.SUBCOMMAND;
+				String cmd = command.COMMAND + (subcommand.equals("") ? "" : " " + subcommand);
+
+				Map<String, String> aliases = command.getAliases();
+
+				ConsoleUtils.printMessage("Found " + (commands.size() + aliases.size()) + " commands");
+
+				for (Command.CommandType type: command.commandTypes) {
+					if (type == Command.CommandType.GUILD) {
+						guildCommands.put(cmd, command);
+					} else if (type == Command.CommandType.PM) {
+						pmCommands.put(cmd, command);
+					}
+				}
+
+				ConsoleUtils.printMessage("Loaded \"" + cmd + "\" command");
+
+				// Load command aliases
+				for (String key: aliases.keySet()) {
+					subcommand = aliases.get(key);
+					cmd = key + (subcommand.equals("") ? "" : " " + subcommand);
+
+					for (Command.CommandType type: command.commandTypes) {
+						if (type == Command.CommandType.GUILD) {
+							guildCommands.put(cmd, command);
+						} else if (type == Command.CommandType.PM) {
+							pmCommands.put(cmd, command);
+						}
+					}
+
+					ConsoleUtils.printMessage("Loaded \"" + cmd + "\" command");
+				}
+			} catch (Exception e) {
+				ConsoleUtils.printError("Failed to load commands from " + commandClass.getCanonicalName());
+				e.printStackTrace();
+			}
+		}
+
+		ConsoleUtils.printMessage("Commands loaded.");
+
+		/*
 		Map<String, Map<String, Command>> commandLists = new TreeMap<>();
 
-		// Iniialize generic Discord guild commands
+		// Initialize generic Discord guild commands
 		initGuildCommands(commandLists);
 
 		// Initialize generic Discord DM Commands
@@ -144,22 +198,27 @@ public class Instance {
 		modules = new TreeMap<>();
 		modules.put(Main.getParameter("GFLCommand"), new BotGFL());
 		modules.put(Main.getParameter("E7Command"), new BotE7());
+		modules.put(Main.getParameter("HI3Command"), new BotHI3());
 		initModuleCommands(commandLists);
+		*/
 	}
 
 	/**
 	 * Private message commands
-	 *
+	 */
 	private void initPmCommands() {
+		/*
 		pmCommands = new HashMap<String, Command>();
 		pmCommands.put("help", new BotHelp("to-dm", guildCommands));
+		*/
   	}
-	*/
 
 	/**
 	 * Guild (Server) commands
 	 */
 	private void initGuildCommands(Map<String, Map<String, Command>> commandLists) {
+
+		/*
 		// Initialize command lists
 		guildCommands = new TreeMap<String, Command>();
 		commandLists.put("Discord", guildCommands);
@@ -173,17 +232,20 @@ public class Instance {
 		//guildCommands.put("pmhelp", new BotHelp("to-dm", guildCommands));
 		//guildCommands.put("queue", new BotAudio("queue"));
 		//guildCommands.put("quote", new BotMisc("quote"));
+		*/
   	}
 
 	/**
 	 * Initialize module command lists
 	 */
 	private void initModuleCommands(Map<String, Map<String, Command>> commandLists) {
+		/*
 		Iterator<Map.Entry<String, CommandModule>> moduleIter = modules.entrySet().iterator();
 		while (moduleIter.hasNext()) {
 			Map.Entry<String, CommandModule> module = moduleIter.next();
 			commandLists.put(module.getValue().getModuleName(), module.getValue().getCommandList());
 		}
+		*/
 	}
 
 	/**
@@ -214,6 +276,16 @@ public class Instance {
 
 		// Return main command
 		return message.substring(CMD_TRIGGER.length(), firstSpaceIndex);
+	}
+
+	/**
+	 * Returns the sub-command used
+	 *
+	 * @param message The message sent
+	 * @return The subcommand issued to the bot
+	 */
+	private String getSubCommand(String message) {
+		return getCommand(message, true);
 	}
 
 	/**

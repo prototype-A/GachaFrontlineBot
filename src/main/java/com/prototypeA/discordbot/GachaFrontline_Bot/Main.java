@@ -12,33 +12,57 @@ import java.util.Scanner;
 public class Main {
 
 	private static final String SETTINGS_FILE_NAME = "bot.settings";
+	private static final String SETTINGS_FILE_LOCATION = "data/" + SETTINGS_FILE_NAME;
+	private static final String SERVERS_DIR = "data/Servers";
 	private static HashMap<String, String> settings;
-	private static HashMap<String, String> serverSettings;
+	private static HashMap<String, HashMap<String, String>> serverSettings;
 	private static Instance bot;
 
 
 	/**
-	 * Load settings from 'data/bot.settings' into a table
+	 * Load the base bot settings
 	 */
 	private static void loadBotSettings() {
 		try {
 			settings = new HashMap<String, String>();
-			Scanner reader = new Scanner(new File("data/" + SETTINGS_FILE_NAME));
+			Scanner reader = new Scanner(new File(SETTINGS_FILE_LOCATION));
 
 			// Iterate over all lines of text in file
 			while (reader.hasNext()) {
-				String setting = reader.nextLine();
-
-				// Ignore empty lines or lines that start with a '#' (comment)
-				if (!(setting.trim().equals("") || setting.charAt(0) == '#')) {
-					putSetting(setting, settings);
-				}
+				putSetting(reader.nextLine(), settings);
 			}
 			reader.close();
 		} catch (FileNotFoundException e) {
-			displayError("Error with \"data/" + SETTINGS_FILE_NAME + "\"", e);
+			ConsoleUtils.printError("Error with \"" + SETTINGS_FILE_LOCATION + "\"", e);
 		}
 	}
+
+	/**
+	 * Load the custom settings for the bot's servers
+	 */
+	private static void loadServerSettings() {
+		serverSettings = new HashMap<String, HashMap<String, String>>();
+
+		for (File file : new File(SERVERS_DIR).listFiles()) {
+			// Check each server directory
+			if (file.isDirectory()) {
+				String serverID = file.getName();
+				serverSettings.put(serverID, new HashMap<String, String>());
+
+				try {
+					// Read server settings
+					File settingsFile = new File(SERVERS_DIR + serverID + "/" + SETTINGS_FILE_NAME);
+					Scanner reader = new Scanner(settingsFile);
+
+					while (reader.hasNext()) {
+						putSetting(reader.nextLine(), serverSettings.get(serverID));
+					}
+					reader.close();
+				} catch (Exception e) {}
+			}
+		}
+	}
+
 
 	/**
 	 * Split lines read from the bot's settings file and split them, storing
@@ -47,10 +71,13 @@ public class Main {
 	 * @param line The line read from the settings file to split and store
 	 */
 	private static void putSetting(String line, HashMap<String, String> map) {
-		String[] pair = line.split(":", 2);
-		pair[0] = pair[0].trim();
-		pair[1] = pair[1].trim();
-		map.put(pair[0], (pair[1] == null) ? "" : pair[1]);
+		// Ignore empty lines or lines that start with a '#' (comment)
+		if (!(line.trim().equals("") || line.charAt(0) == '#')) {
+			String[] pair = line.split(":", 2);
+			pair[0] = pair[0].trim();
+			pair[1] = pair[1].trim();
+			map.put(pair[0], (pair[1] == null) ? "" : pair[1]);
+		}
 	}
 
 	/**
@@ -60,18 +87,34 @@ public class Main {
 	 * @return The value of the setting
 	 */
 	public static String getParameter(String param) {
-		return settings.get(param);
+		if (param == null) {
+			return null;
+		}
+
+		try {
+			return settings.get(param);
+		} catch (Exception e) {}
+
+		return null;
 	}
 
 	/**
-	 * Returns a server setting value
+	 * Returns a custom server setting parameter value
 	 *
-	 * @param serverID The ID of the server
+	 * @param serverID The ID of the server to get the setting value for
 	 * @param param The setting to get the value for
 	 * @return The value of the setting
 	 */
 	public static String getServerParameter(String serverID, String param) {
-		return serverSettings.get(param);
+		if (serverID == null || param == null) {
+			return null;
+		}
+
+		try {
+			return serverSettings.get(serverID).get(param);
+		} catch (Exception e) {}
+
+		return null;
 	}
 
 	/**
@@ -93,24 +136,6 @@ public class Main {
 		return getParameter(api);
 	}
 
-	public static Map<String, String> readServerSetting(String serverID, String setting) {
-		String file = "data/Servers/" + serverID + "/bot.settings";
-		try {
-			settings = new HashMap<String, String>();
-			Scanner reader = new Scanner(new File(file));
-
-			while (reader.hasNext()) {
-				//putSetting(reader.nextLine());
-			}
-			reader.close();
-		} catch (FileNotFoundException e1) {
-
-		} catch (Exception e2) {}
-		
-
-		return null;
-	}
-
 	/**
 	 * Writes and saves a server parameter setting for a
 	 * specified server
@@ -119,30 +144,29 @@ public class Main {
 	 * @param setting The parameter to write
 	 * @param value The value of the setting to write
 	 */
-	public static void writeServerSetting(String serverID, String setting, String value) {
-		String filePath = "data/Servers/" + serverID + "/bot.settings";
+	public static void updateServerSetting(String serverID, String setting, String value) {
+		String filePath = SERVERS_DIR + "/" + serverID + "/" + SETTINGS_FILE_NAME;
 		try {
 			File settingsFile = new File(filePath);
 			Scanner reader = new Scanner(settingsFile);
 			FileWriter writer = new FileWriter(settingsFile);
-			boolean written = false;
+			String serverSettings = "";
 
+			// Read file
 			while (reader.hasNext()) {
 				String line = reader.nextLine();
-				// Overwrite previous value
+
 				if (line.startsWith(setting + ":")) {
-					writer.write(setting + ": " + value);
-					written = true;
+					// Overwrite previous value
+					serverSettings += setting + ": " + value;
 				} else {
-					writer.write(line);
+					serverSettings += line;
 				}
 			}
 			reader.close();
 
-			// Write setting if not in file
-			if (!written) {
-				writer.write(setting + ": " + value);
-			}
+			// Update file
+			writer.write(serverSettings);
 			writer.close();
 		} catch (FileNotFoundException e1) {
 			// Create server settings file
@@ -151,86 +175,11 @@ public class Main {
 				writer.write(setting + ": " + value);
 				writer.close();
 			} catch (Exception e) {
-				displayError("Failed to create new settings file for server " + serverID, e);
+				ConsoleUtils.printError("Failed to create new settings file for server [" + serverID + "]", e);
 			}
 		} catch (IOException e2) {
-			displayError("Failed to write server " + serverID + "'s settings", e2);
+			ConsoleUtils.printError("Failed to write settings for server [" + serverID + "]", e2);
 		}
-	}
-
-	/**
-	 * Displays a message in the command line
-	 * 
-	 * @param message The message to output to the command line
-	 */
-	public static void displayMessage(String message) {
-		displayMessage(message, null, "Green");
-	}
-
-	/**
-	 * Displays a colored warning message in the command line
-	 * 
-	 * @param message The warning message to output to the command line
-	 */
-	public static void displayWarning(String message) {
-		displayMessage(message, "Warning", "Yellow");
-	}
-
-	/**
-	 * Displays a colored error message in the command line
-	 * 
-	 * @param message The error message to output to the command line
-	 */
-	public static void displayError(String message) {
-		displayMessage(message, "Error", "Red");
-	}
-
-	/**
-	 * Displays a colored error message in the command line and prints 
-	 * out the stack trace of the exception thrown
-	 * 
-	 * @param message The error message to output to the command line
-	 * @param exception The exception thrown
-	 */
-	public static void displayError(String message, Exception exception) {
-		displayError(message);
-		exception.printStackTrace();
-	}
-
-	/**
-	 * Displays a message in the command line
-	 * 
-	 * @param message The message to output to the command line
-	 * @param type The type of message, if specified e.g. "[BOT:TYPE]"
-	 * @param color The color of "[BOT:TYPE]"
-	 */
-	public static void displayMessage(String message, String type, String color) {
-		String output = "";
-		switch(color) {
-			case "Red": 	output += "\033[1;31m[BOT";
-							break;
-			case "Yellow": 	output += "\033[1;33m[BOT";
-							break;
-			case "Green": 	output += "\033[1;32m[BOT";
-							break;
-			case "Cyan": 	output += "\033[1;36m[BOT";
-							break;
-			case "Blue": 	output += "\033[1;34m[BOT";
-							break;
-			case "Purple": 	output += "\033[1;35m[BOT";
-							break;
-			case "White": 	output += "\033[1;37m[BOT";
-							break;
-			case "Black": 	output += "\033[1;30m[BOT";
-							break;
-			case "":		output += "\033[1;0m[BOT";
-							break;
-		}
-		if (type != null) {
-			output += ":" + type.toUpperCase();
-		}
-		output += "]" + "\033[1;0m " + message;
-		System.out.println("\n" + output);
 	}
 
 
@@ -241,7 +190,8 @@ public class Main {
 	 */
 	public static void main(String[] args) {
 
-		displayMessage("Launching...");
+		ConsoleUtils.origin = "Bot";
+		ConsoleUtils.printMessage("Launching...");
 
 		try {
 			// Get launch args
@@ -249,7 +199,7 @@ public class Main {
 			for (int i = 0; i < args.length; i++) {
 				if (args[i].equals("-test") ||
 					args[i].equals("-t") ||
-					args[i].equals("--test") ) {
+					args[i].equals("--test")) {
 					// Testing mode
 					testMode = true;
 				}
@@ -257,6 +207,7 @@ public class Main {
 
 			// Read settings
 			loadBotSettings();
+			loadServerSettings();
 
 			// Kill the launch if token or key was not specified in settings file
 			String botToken = "";
@@ -264,7 +215,7 @@ public class Main {
 			
 			if (testMode) {
 				// Load test bot token and trigger instead
-				displayWarning("Launching in TEST mode");
+				ConsoleUtils.printWarning("Launching in TEST mode");
 				botToken = settings.get("TestToken");
 				botTrigger = settings.get("TestCommandTrigger");
 				if (botToken.equals("") || botTrigger.equals("")) {
@@ -278,10 +229,10 @@ public class Main {
 				}
 			}
 
-			displayMessage("Token and command trigger found. Logging in...");
+			ConsoleUtils.printMessage("Token and command trigger found. Logging in...");
 			bot = new Instance(botToken, botTrigger);
 		} catch (Exception e) {
-			displayError("Failed to launch bot", e);
+			ConsoleUtils.printError("Failed to launch bot", e);
 			e.printStackTrace();
 		}
 
