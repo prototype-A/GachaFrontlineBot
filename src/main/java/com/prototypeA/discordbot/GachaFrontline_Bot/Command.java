@@ -21,7 +21,7 @@ import java.util.Scanner;
 import java.util.function.Consumer;
 
 
-public abstract class Command extends Messaging implements Runnable {
+public abstract class Command extends Voice implements Runnable {
 
 	public enum CommandType { GUILD, PM };
 
