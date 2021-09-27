@@ -1,6 +1,7 @@
 package com.prototypeA.discordbot.GachaFrontline_Bot;
 
 import discord4j.core.DiscordClient;
+import discord4j.core.DiscordClientBuilder;
 import discord4j.core.GatewayDiscordClient;
 import discord4j.core.event.domain.lifecycle.DisconnectEvent;
 import discord4j.core.event.domain.lifecycle.ReadyEvent;
@@ -11,6 +12,7 @@ import discord4j.core.event.domain.message.MessageCreateEvent;
 import discord4j.core.object.entity.channel.Channel;
 import discord4j.core.object.entity.channel.MessageChannel;
 import discord4j.core.object.entity.Message;
+import discord4j.gateway.intent.IntentSet;
 
 import org.reflections.Reflections;
 
@@ -30,7 +32,6 @@ public class Instance {
 
 	private static Map<String, Command> pmCommands;
 	private static Map<String, Command> guildCommands;
-	//private static Map<String, CommandModule> modules;
 
 
 	public Instance(String token, String trigger) {
@@ -44,9 +45,12 @@ public class Instance {
 		ConsoleUtils.printMessage("Logging in...");
 		
 		// Attempt to log in
-		client = DiscordClient.create(BOT_TOKEN);
-		gateway = client.login()
-						.block();
+		client = DiscordClientBuilder.create(BOT_TOKEN).build();
+		gateway = client
+					//.gateway()
+					//.setEnabledIntents(IntentSet.all())
+					.login()
+					.block();
 
 		// Subscribe to Discord events
 		subscribeToEvents();
@@ -115,16 +119,6 @@ public class Instance {
 			ConsoleUtils.printMessage("Reconnection attempt #" + event.getCurrentAttempt() + " failed.");
 		});
 
-		/* Discord will automatically keep check connection after a set period of time
-		gateway.on(ReconnectStartEvent.class).subscribe(event -> {
-			ConsoleUtils.printMessage("Gateway attempting reconnection...");
-		});
-
-		gateway.on(ReconnectEvent.class).subscribe(event -> {
-			ConsoleUtils.printMessage("Gateway connection successfully re-established.");
-		});
-		*/
-
 
 		ConsoleUtils.printMessage("Event subscription completed.");
 	}
@@ -152,7 +146,7 @@ public class Instance {
 
 				ConsoleUtils.printMessage("Found " + (commands.size() + aliases.size()) + " commands");
 
-				for (Command.CommandType type: command.commandTypes) {
+				for (Command.CommandType type: command.COMMAND_TYPES) {
 					if (type == Command.CommandType.GUILD) {
 						guildCommands.put(cmd, command);
 					} else if (type == Command.CommandType.PM) {
@@ -167,7 +161,7 @@ public class Instance {
 					subcommand = aliases.get(key);
 					cmd = key + (subcommand.equals("") ? "" : " " + subcommand);
 
-					for (Command.CommandType type: command.commandTypes) {
+					for (Command.CommandType type: command.COMMAND_TYPES) {
 						if (type == Command.CommandType.GUILD) {
 							guildCommands.put(cmd, command);
 						} else if (type == Command.CommandType.PM) {
@@ -184,68 +178,6 @@ public class Instance {
 		}
 
 		ConsoleUtils.printMessage("Commands loaded.");
-
-		/*
-		Map<String, Map<String, Command>> commandLists = new TreeMap<>();
-
-		// Initialize generic Discord guild commands
-		initGuildCommands(commandLists);
-
-		// Initialize generic Discord DM Commands
-		//initPmCommands(commandLists);
-
-		// Add module commands
-		modules = new TreeMap<>();
-		modules.put(Main.getParameter("GFLCommand"), new BotGFL());
-		modules.put(Main.getParameter("E7Command"), new BotE7());
-		modules.put(Main.getParameter("HI3Command"), new BotHI3());
-		initModuleCommands(commandLists);
-		*/
-	}
-
-	/**
-	 * Private message commands
-	 */
-	private void initPmCommands() {
-		/*
-		pmCommands = new HashMap<String, Command>();
-		pmCommands.put("help", new BotHelp("to-dm", guildCommands));
-		*/
-  	}
-
-	/**
-	 * Guild (Server) commands
-	 */
-	private void initGuildCommands(Map<String, Map<String, Command>> commandLists) {
-
-		/*
-		// Initialize command lists
-		guildCommands = new TreeMap<String, Command>();
-		commandLists.put("Discord", guildCommands);
-
-		// Generic Discord commands
-		guildCommands.put("avatar", new BotMisc("avatar"));
-		guildCommands.put("exit", new BotSystem("exit"));
-		guildCommands.put("goto", new BotSystem("goto"));
-		guildCommands.put("help", new BotHelp("to-channel", commandLists));
-		//guildCommands.put("player", new BotAudio("player"));
-		//guildCommands.put("pmhelp", new BotHelp("to-dm", guildCommands));
-		//guildCommands.put("queue", new BotAudio("queue"));
-		//guildCommands.put("quote", new BotMisc("quote"));
-		*/
-  	}
-
-	/**
-	 * Initialize module command lists
-	 */
-	private void initModuleCommands(Map<String, Map<String, Command>> commandLists) {
-		/*
-		Iterator<Map.Entry<String, CommandModule>> moduleIter = modules.entrySet().iterator();
-		while (moduleIter.hasNext()) {
-			Map.Entry<String, CommandModule> module = moduleIter.next();
-			commandLists.put(module.getValue().getModuleName(), module.getValue().getCommandList());
-		}
-		*/
 	}
 
 	/**
@@ -279,6 +211,16 @@ public class Instance {
 	}
 
 	/**
+	 * Returns the main command used
+	 *
+	 * @param message The message sent
+	 * @return The command issued to the bot
+	 */
+	private String getCommand(String message) {
+		return getCommand(message, false);
+	}
+
+	/**
 	 * Returns the sub-command used
 	 *
 	 * @param message The message sent
@@ -286,15 +228,5 @@ public class Instance {
 	 */
 	private String getSubCommand(String message) {
 		return getCommand(message, true);
-	}
-
-	/**
-	 * Returns the main command used
-	 *
-	 * @param message The message sent
-	 * @return The command issued to the bot
-	 */
-	public String getCommand(String message) {
-		return getCommand(message, false);
 	}
 }
