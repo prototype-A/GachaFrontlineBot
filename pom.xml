@@ -35,7 +35,7 @@
 		<dependency>
 			<groupId>com.discord4j</groupId>
 			<artifactId>discord4j-core</artifactId>
-			<version>3.2.0-RC3</version>
+			<version>3.2.0</version>
 		</dependency>
 		<dependency>
 			<!-- http://mvnrepository.com/artifact/org.json/json -->
@@ -60,6 +60,13 @@
 			<artifactId>reflections</artifactId>
 			<version>0.9.12</version>
 		</dependency>
+		<!--
+		<dependency>
+			<groupId>org.slf4j</groupId>
+			<artifactId>slf4j-simple</artifactId>
+			<version>1.7.32</version>
+		</dependency>
+		-->
 	</dependencies>
 
 	<build>
@@ -109,6 +116,12 @@
 									<excludes>
 										<exclude>module-info.class</exclude>
 										<exclude>META-INF/**</exclude>
+									</excludes>
+								</filter>
+								<filter>
+									<artifact>com.discord4j:discord4j-voice</artifact>
+									<excludes>
+										<exclude>discord4j/voice/LocalVoiceSendTask.class</exclude>
 									</excludes>
 								</filter>
 							</filters>
