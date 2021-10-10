@@ -27,14 +27,19 @@ public abstract class Command extends Voice implements Runnable {
 
 	public final String COMMAND;
 	public final String SUBCOMMAND;
-	public final CommandType[] commandTypes;
+	public final CommandType[] COMMAND_TYPES;
+	public final String DESCRIPTION;
+	public final CommandParameter[] PARAMETERS;
 	protected Map<String, String> aliases;
 
 
-	public Command(String command, String subcommand, CommandType[] commandTypes) {
+	public Command(String command, String subcommand, CommandType[] commandTypes,
+					String desc, CommandParameter[] parameters) {
 		this.COMMAND = command;
 		this.SUBCOMMAND = subcommand;
-		this.commandTypes = commandTypes;
+		this.COMMAND_TYPES = commandTypes;
+		this.DESCRIPTION = desc;
+		this.PARAMETERS = parameters;
 		aliases = new HashMap<String, String>();
 	}
 
@@ -62,13 +67,6 @@ public abstract class Command extends Voice implements Runnable {
 	 * The functionality of the command when it is executed
 	 */
 	public abstract void run();
-
-	/**
-	 * Returns help outlining the usage of this command
-	 *
-	 * @return The help message of this command
-	 */
-	public abstract String getHelp();
 
 	/**
 	 * Fetch all arguments passed with the issued bot command
@@ -275,5 +273,51 @@ public abstract class Command extends Voice implements Runnable {
 	*/
 
 	protected void redoReacts() {}
+
+
+	/**
+	 * Returns help outlining the usage of this command
+	 *
+	 * @return The help message of this command
+	 */
+	public String getHelp() {
+		return "";
+	}
+	
+	public String generateCommandJson() {
+		String json = "{\n";
+
+		// Name
+		json += "\t\"name\": \"" + COMMAND + 
+				(SUBCOMMAND.equals("") ? "" : " " + SUBCOMMAND) + "\",\n";
+
+		// Description
+		json += "\t\"desc\": \"" + DESCRIPTION + "\",\n";
+
+		// Parameters
+		if (PARAMETERS.length > 0) {
+			json += "\t\"options\": [\n";
+
+			for (int i = 0; i < PARAMETERS.length; i++) {
+				CommandParameter param = PARAMETERS[i];
+				json += "\t\t{\n" + 
+					"\t\t\t\"name\": \"" + param.getName() + "\",\n" + 
+					"\t\t\t\"desc\": \"" + param.getDescription() + "\",\n" + 
+					"\t\t\t\"type\": " + param.getType() + ",\n" + 
+					"\t\t\t\"required\": " + param.isRequired() + "\n" + 
+					"\t\t}";
+
+				if (i < PARAMETERS.length - 1) {
+					json += ",\n";
+				}
+			}
+
+			json += "\n\t]\n";
+		}
+
+		json += "}";
+
+		return json;
+	}
 
 }
