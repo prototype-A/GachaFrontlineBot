@@ -1,5 +1,6 @@
 package com.prototypeA.discordbot.GachaFrontline_Bot;
 
+import discord4j.common.util.Snowflake;
 import discord4j.core.DiscordClient;
 import discord4j.core.DiscordClientBuilder;
 import discord4j.core.GatewayDiscordClient;
@@ -27,8 +28,8 @@ public class Instance {
 
 	private final String BOT_TOKEN; // The bot's login token
 	private final String CMD_TRIGGER; // The symbol(s) to invoke bot commands
-	private final DiscordClient client;
-	private final GatewayDiscordClient gateway;
+	private final DiscordClient CLIENT;
+	private final GatewayDiscordClient GATEWAY;
 
 	private static Map<String, Command> pmCommands;
 	private static Map<String, Command> guildCommands;
@@ -45,8 +46,8 @@ public class Instance {
 		ConsoleUtils.printMessage("Logging in...");
 		
 		// Attempt to log in
-		client = DiscordClientBuilder.create(BOT_TOKEN).build();
-		gateway = client
+		CLIENT = DiscordClientBuilder.create(BOT_TOKEN).build();
+		GATEWAY = CLIENT
 					//.gateway()
 					//.setEnabledIntents(IntentSet.all())
 					.login()
@@ -58,7 +59,7 @@ public class Instance {
 		ConsoleUtils.printMessage("Login successful. Bot Ready.");
 
 		// Block until client gateway disconnects
-		gateway.onDisconnect().block();
+		GATEWAY.onDisconnect().block();
 	}
 
 	/**
@@ -68,7 +69,7 @@ public class Instance {
 		ConsoleUtils.printMessage("Starting Discord event subscription...");
 
 		// When a message is sent by a user
-		gateway.on(MessageCreateEvent.class).subscribe(event -> {
+		GATEWAY.on(MessageCreateEvent.class).subscribe(event -> {
 			final Message message = event.getMessage();
 			String messageContents = message.getContent();
 			MessageChannel channel = message.getChannel().block();
@@ -100,22 +101,22 @@ public class Instance {
 
 				// Run the command if found
 				if (command != null) {
-					botCommand.init(message);
+					botCommand.init(GATEWAY, message);
 					Thread commandThread = new Thread(botCommand);
 					commandThread.start();
 				}
 			}
 		});
 
-		gateway.on(DisconnectEvent.class).subscribe(event -> {
+		GATEWAY.on(DisconnectEvent.class).subscribe(event -> {
 			ConsoleUtils.printWarning("Gateway connection interrupted.");
 		});
 
-		gateway.on(ReadyEvent.class).subscribe(event -> {
+		GATEWAY.on(ReadyEvent.class).subscribe(event -> {
 			ConsoleUtils.printMessage("Bot Ready.");
 		});
 
-		gateway.on(ReconnectFailEvent.class).subscribe(event -> {
+		GATEWAY.on(ReconnectFailEvent.class).subscribe(event -> {
 			ConsoleUtils.printMessage("Reconnection attempt #" + event.getCurrentAttempt() + " failed.");
 		});
 

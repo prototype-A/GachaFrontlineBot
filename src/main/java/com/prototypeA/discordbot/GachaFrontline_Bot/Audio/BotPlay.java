@@ -1,7 +1,10 @@
 package com.prototypeA.discordbot.GachaFrontline_Bot;
 
-import discord4j.common.util.Snowflake;
-import discord4j.core.object.entity.Guild;
+import com.sedmelluq.discord.lavaplayer.player.AudioLoadResultHandler;
+import com.sedmelluq.discord.lavaplayer.player.AudioPlayerManager;
+import com.sedmelluq.discord.lavaplayer.tools.FriendlyException;
+import com.sedmelluq.discord.lavaplayer.track.AudioPlaylist;
+import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -32,7 +35,34 @@ public class BotPlay extends Command {
 
 			// Queue audio only if successful in joining the user's voice channel
 			if (joinUserVoiceChannel()) {
-				GuildAudioManager.of(commandMessage.getGuildId().get()).queue(url);
+				GuildAudioManager manager = GuildAudioManager.of(commandMessage.getGuildId().get());
+				AudioPlayerManager playerManager = manager.getPlayerManager();
+				
+				playerManager.loadItemOrdered(manager, url, new AudioLoadResultHandler() {
+					@Override
+					public void trackLoaded(AudioTrack track) {
+						manager.queue(track, gateway, commandMessage);
+						deleteCommandMessage();
+					}
+
+					@Override
+					public void playlistLoaded(AudioPlaylist playlist) {
+						manager.queue(playlist, gateway, commandMessage);
+						deleteCommandMessage();
+					}
+
+					@Override
+					public void noMatches() {
+						// Notify the user that we've got nothing
+						sendTempMessage("Invalid/unsupported URL specified");
+					}
+
+					@Override
+					public void loadFailed(FriendlyException e) {
+						// Notify the user that everything exploded
+						sendTempMessage("Failed to load audio: " + e.getMessage());
+					}
+				});
 			}
 		}
 	}

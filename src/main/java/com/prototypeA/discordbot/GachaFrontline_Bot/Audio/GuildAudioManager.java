@@ -1,17 +1,16 @@
 package com.prototypeA.discordbot.GachaFrontline_Bot;
 
-import com.sedmelluq.discord.lavaplayer.player.AudioLoadResultHandler;
 import com.sedmelluq.discord.lavaplayer.player.AudioPlayer;
 import com.sedmelluq.discord.lavaplayer.player.AudioPlayerManager;
 import com.sedmelluq.discord.lavaplayer.player.DefaultAudioPlayerManager;
 import com.sedmelluq.discord.lavaplayer.source.AudioSourceManagers;
-import com.sedmelluq.discord.lavaplayer.tools.FriendlyException;
 import com.sedmelluq.discord.lavaplayer.track.AudioPlaylist;
 import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
 import com.sedmelluq.discord.lavaplayer.track.playback.NonAllocatingAudioFrameBuffer;
 
 import discord4j.common.util.Snowflake;
-import discord4j.core.object.entity.Guild;
+import discord4j.core.GatewayDiscordClient;
+import discord4j.core.object.entity.Message;
 import discord4j.voice.AudioProvider;
 
 import java.util.concurrent.ConcurrentHashMap;
@@ -59,6 +58,15 @@ public final class GuildAudioManager {
 		player.addListener(scheduler);
 	}
 
+	/**
+	 * Gets the audio player manager used to create audio
+	 * players and obtain audio from network/local sources
+	 * 
+	 * @return The global audio player manager
+	 */
+	public AudioPlayerManager getPlayerManager() {
+		return PLAYER_MANAGER;
+	}
 
 	/**
 	 * Gets the audio provider that will provide Discord with 
@@ -67,61 +75,59 @@ public final class GuildAudioManager {
 	 * @return The audio provider for the audio player
 	 */
 	public AudioProvider getAudioProvider() {
-		return this.provider;
-	}
-
-	public Queue<AudioTrack> getPlaylist() {
-		return scheduler.getQueue();
-	}
-
-	public int getPlayerVolume() {
-		return player.getVolume();
-	}
-
-	public void setPlayerVolume(int volume) {
-		player.setVolume(volume);
+		return provider;
 	}
 
 	/**
-	 * Queues up the audio from the specified url
-	 *
-	 * @param url The link of the audio source to play
-	 * @return True if the bot successfully queued up the audio to play, otherwise False
+	 * Removes the embedded message with that guild's audio
+	 * player info and playback controls
 	 */
-	public void queue(String url) {
-		try {
-			//String filePath = AudioCore.getAudioFile(url, guildId).getCanonicalPath();
+	public void removePlayerEmbed() {
+		scheduler.removePlayerEmbed();
+	}
 
-			//PLAYER_MANAGER.loadItem(url, new AudioLoadResultHandler() {
-			//PLAYER_MANAGER.loadItem(filePath, new AudioLoadResultHandler() {
-			PLAYER_MANAGER.loadItemOrdered(this, url, new AudioLoadResultHandler() {
-			//PLAYER_MANAGER.loadItemOrdered(this, filePath, new AudioLoadResultHandler() {
-				@Override
-				public void trackLoaded(AudioTrack track) {
-					scheduler.queue(track);
-				}
 
-				@Override
-				public void playlistLoaded(AudioPlaylist playlist) {
-					for (AudioTrack track: playlist.getTracks()) {
-						scheduler.queue(track);
-					}
-				}
+	/**
+	 * Queues up the specified audio track
+	 *
+	 * @param track The audio track to queue up
+	 * @param gateway The Discord gateway of the bot
+	 * @param message The message that queued up the audio
+	 */
+	public void queue(AudioTrack track, GatewayDiscordClient gateway, 
+						Message message) {
+		scheduler.queue(track, gateway, message);
+	}
 
-				@Override
-				public void noMatches() {
-					// Notify the user that we've got nothing
-					
-				}
+	/**
+	 * Queues up the specified audio playlist
+	 *
+	 * @param track The audio playlist to queue up
+	 * @param gateway The Discord gateway of the bot
+	 * @param message The message that queued up the audio
+	 */
+	public void queue(AudioPlaylist playlist, GatewayDiscordClient gateway, 
+						Message message) {
+		scheduler.queue(playlist, gateway, message);
+	}
 
-				@Override
-				public void loadFailed(FriendlyException throwable) {
-					// Notify the user that everything exploded
-					
-				}
-			});
-		} catch (Exception e) {
-			e.printStackTrace();
+	public void pausePlayback() {
+		if (player.getPlayingTrack() != null && !player.isPaused()) {
+			player.setPaused(true);
 		}
+	}
+
+	public void resumePlayback() {
+		if (player.getPlayingTrack() != null && player.isPaused()) {
+			player.setPaused(false);
+		}
+	}
+
+	public boolean skipPlayback() {
+		return scheduler.skip();
+	}
+
+	public void clearPlayback() {
+		scheduler.clearPlayback();
 	}
 }

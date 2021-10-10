@@ -72,8 +72,8 @@ public abstract class Voice extends Messaging {
 		boolean joined = false;
 
 		if (channel != null) {
-			AudioProvider audioProvider = GuildAudioManager.of(channel.getGuild().block().getId())
-											.getAudioProvider();
+			GuildAudioManager manager = GuildAudioManager.of(channel.getGuild().block().getId());
+			AudioProvider audioProvider = manager.getAudioProvider();
 			Mono<VoiceConnection> voiceConnection = channel.join(spec -> {
 														// Deafen self when joining
 														spec.setSelfDeaf(true);
@@ -84,7 +84,7 @@ public abstract class Voice extends Messaging {
 				joined = true;
 			}
 
-			// Disconnect from voice channel after being alone in it for 15s
+			// Disconnect from voice channel after being alone in it for 10s
 			voiceConnection.flatMap(connection -> {
 				// Check if bot is alone in voice channel
 				final Publisher<Boolean> voiceStateCounter = channel.getVoiceStates()
@@ -110,7 +110,12 @@ public abstract class Voice extends Messaging {
 											.then();
 
 				// Disconnect bot if either condition is met
-				return Mono.first(onDelay, onEvent).then(connection.disconnect());
+				return Mono.first(new Mono[]{ onDelay, onEvent })
+						.then(connection.disconnect()
+							.doOnSuccess(s -> {
+								manager.removePlayerEmbed();
+								manager.clearPlayback();
+							}));
 			}).subscribe();
 		}
 

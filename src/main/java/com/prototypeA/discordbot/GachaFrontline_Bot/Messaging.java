@@ -1,9 +1,13 @@
 package com.prototypeA.discordbot.GachaFrontline_Bot;
 
+import discord4j.core.GatewayDiscordClient;
+import discord4j.core.object.component.ActionRow;
 import discord4j.core.object.entity.Message;
 import discord4j.core.object.entity.User;
 import discord4j.core.object.entity.channel.MessageChannel;
 import discord4j.core.object.reaction.ReactionEmoji;
+import discord4j.core.spec.EmbedCreateSpec;
+import discord4j.core.spec.MessageCreateSpec;
 import discord4j.core.spec.legacy.LegacyEmbedCreateSpec;
 
 import java.util.function.Consumer;
@@ -11,13 +15,22 @@ import java.util.function.Consumer;
 
 public abstract class Messaging {
 
+	protected GatewayDiscordClient gateway;
 	protected Message commandMessage;
 
 
-	protected void init(Message message) {
+	protected void init(GatewayDiscordClient gateway, Message message) {
+		this.gateway = gateway;
 		this.commandMessage = message;
 	}
 
+	/**
+	 * Deletes the original message sent by the user to 
+	 * invoke a bot command
+	 */
+	protected void deleteCommandMessage() {
+		commandMessage.delete().subscribe();
+	}
 
 	/**
 	 * Constructs and sends a message to the same channel that 
@@ -64,6 +77,26 @@ public abstract class Messaging {
 	}
 
 	/**
+	 * Sends an embed as a message with up to 5 rows of buttons
+	 *
+	 * @param embed The embed to send in the message
+	 * @param buttonRows The ActionRows of buttons to attach on the message
+	 * @return The sent message
+	 */
+	protected Message sendMessage(EmbedCreateSpec embed, ActionRow... buttonRows) {
+		if (buttonRows.length > 5) {
+			return null;
+		}
+
+		return commandMessage.getChannel()
+				.block()
+				.createMessage(MessageCreateSpec.create()
+					.withEmbeds(embed)
+					.withComponents(buttonRows))
+				.block();
+	}
+
+	/**
 	 * Constructs and sends a temporary message to the channel 
 	 * that the command was passed to. It will be deleted after 
 	 * a short delay, along with the user message that issued the
@@ -77,8 +110,8 @@ public abstract class Messaging {
 											.createMessage(content)
 											.block();
 		delay(Integer.parseInt(Main.getParameter("TempMessageTime")) * 1000);
-		newMessage.delete().block();
-		commandMessage.delete().block();
+		newMessage.delete().subscribe();
+		deleteCommandMessage();
 	}
 
 	/**
@@ -95,8 +128,8 @@ public abstract class Messaging {
 											.createEmbed(embeds)
 											.block();
 		delay(Integer.parseInt(Main.getParameter("TempMessageTime")) * 1000);
-		newMessage.delete().block();
-		commandMessage.delete().block();
+		newMessage.delete().subscribe();
+		deleteCommandMessage();
 	}
 
 	/**
@@ -155,7 +188,7 @@ public abstract class Messaging {
 	 *
 	 * @param name The string to format
 	 * @return The formatted string
-	 */
+	 *
 	protected String formatName(String name) {
 		String[] words = name.split("_");
 		String formattedName = "";
@@ -165,9 +198,9 @@ public abstract class Messaging {
 		}
 
 		return formattedName.trim();
-	}
+	}*/
 
-	protected abstract void redoReacts();
+	//protected abstract void redoReacts();
 
 
 	/**
