@@ -31,6 +31,7 @@ public class PlayerEmbed {
 	private static final String SKIP_BTN_ID_APPEND = "-SkipBtn";
 	private static final String TIME_BTN_ID_APPEND = "-TimeBtn";
 	private static final String INFO_BTN_ID_APPEND = "-InfoBtn";
+	private static final String QUEUE_BTN_ID_APPEND = "-QueueBtn";
 
 	private final Snowflake GUILD_ID;
 	private final GatewayDiscordClient GATEWAY;
@@ -104,16 +105,16 @@ public class PlayerEmbed {
 					DecimalFormat df = new DecimalFormat("00");
 
 					long currPos = this.currentTrack.getPosition();
-					int posMin = getMins(currPos);
-					String posSec = getSecsStr(currPos);
+					String posMin = getMins(currPos);
+					String posSec = getSecs(currPos);
 
 					long duration = trackInfo.length;
-					int durMin = getMins(duration);
-					String durSec = getSecsStr(duration);
+					String durMin = getMins(duration);
+					String durSec = getSecs(duration);
 
 					long timeLeft = duration - currPos;
-					int minLeft = getMins(timeLeft);
-					String secLeft = getSecsStr(timeLeft);
+					String minLeft = getMins(timeLeft);
+					String secLeft = getSecs(timeLeft);
 
 					String posIndicator = "●";
 					String playbackBar = "━━━━━━━━━━━";
@@ -122,36 +123,59 @@ public class PlayerEmbed {
 									playbackBar.substring(index, playbackBar.length());
 
 					event.reply().withEmbeds(EmbedCreateSpec.builder()
-									.title(trackInfo.title)
-									.description("" + 
-										posMin + ":" + posSec + " " + 
-										playbackBar + " " + 
-										durMin + ":" + durSec)
-									.addField("Time Left", "" + 
-										minLeft + ":" + secLeft, true)
-								.build())
+											.title(trackInfo.title)
+											.description(posMin + ":" + posSec + 
+												" " + playbackBar + " " + 
+												durMin + ":" + durSec)
+											.addField("Time Left", minLeft + 
+												":" + secLeft, true)
+										.build())
 								.withEphemeral(true).subscribe();
 				} else if (buttonId.endsWith(INFO_BTN_ID_APPEND)) {
 					// Track info button clicked
 					AudioTrackInfo trackInfo = this.currentTrack.getInfo();
 
 					long currPos = this.currentTrack.getPosition();
-					int posMin = getMins(currPos);
-					String posSec = getSecsStr(currPos);
+					String posMin = getMins(currPos);
+					String posSec = getSecs(currPos);
 
 					long duration = trackInfo.length;
-					int durMin = getMins(duration);
-					String durSec = getSecsStr(duration);
+					String durMin = getMins(duration);
+					String durSec = getSecs(duration);
 
 					event.reply().withEmbeds(EmbedCreateSpec.builder()
-										.title(trackInfo.title)
-										.description(trackInfo.uri)
-										.addField("Position", "" + 
-											posMin + ":" + posSec, true)
-										.addField("Duration", "" + 
-											durMin + ":" + durSec, true)
-									.build())
+												.title(trackInfo.title)
+												.description(trackInfo.uri)
+												.addField("Position", 
+													posMin + ":" + posSec, true)
+												.addField("Duration", 
+													durMin + ":" + durSec, true)
+											.build())
 									.withEphemeral(true).subscribe();
+				} else if (buttonId.endsWith(QUEUE_BTN_ID_APPEND)) {
+					// Queued track list button clicked
+					if (this.queuedTracks.isEmpty()) {
+						event.reply("There are currently no other queued tracks")
+								.withEphemeral(true).subscribe();
+					} else {
+						String queueList = "";
+						long totalTimeToQueue = this.currentTrack.getPosition();
+						for (AudioTrack track: this.queuedTracks) {
+							String queueMin = getMins(totalTimeToQueue);
+							String queueSec = getSecs(totalTimeToQueue);
+
+							String timeToQueue = queueMin + ":" + queueSec;
+							queueList += track.getInfo().title + " (in " + 
+											timeToQueue + ")\n";
+
+							totalTimeToQueue += track.getInfo().length;
+						}
+
+						event.reply().withEmbeds(EmbedCreateSpec.create()
+													.withTitle("Queued Tracks")
+													.withDescription(queueList))
+										.withEphemeral(true).subscribe();
+					}
 				}
 			} else {
 				event.reply("There is currently no audio track playing")
@@ -229,9 +253,9 @@ public class PlayerEmbed {
 			embed = embed.footer("Requested by: " + name, member.getAvatarUrl());
 
 			// Duration
-			int mins = getMins(trackInfo.length);
-			String secs = getSecsStr(trackInfo.length);
-			String trackLength = "" + mins + ":" + secs;
+			String mins = getMins(trackInfo.length);
+			String secs = getSecs(trackInfo.length);
+			String trackLength = mins + ":" + secs;
 			embed = embed.addField("Duration", trackLength, true);
 		}
 
@@ -245,14 +269,14 @@ public class PlayerEmbed {
 		String queueList = "";
 		int count = 0;
 		for (AudioTrack track: queuedTracks) {
-			queueList += track.getInfo().title + "\n";
-
 			// Limit queued track list
 			count++;
-			if (count >= 3) {
+			if (count <= 3) {
 				int numSongsInQueue = queuedTracks.size() - count;
 				queueList += "(+" + numSongsInQueue + " more)";
 				break;
+			} else {
+				queueList += track.getInfo().title + "\n";
 			}
 		}
 		if (!queueList.equals("")) {
@@ -280,12 +304,14 @@ public class PlayerEmbed {
 												TIME_BTN_ID_APPEND, "⌛︎");
 		Button infoButton = Button.secondary(GUILD_ID.asLong() +
 												INFO_BTN_ID_APPEND, "ℹ");
+		Button queueButton = Button.secondary(GUILD_ID.asLong() +
+												QUEUE_BTN_ID_APPEND, "🎼");
 
 		ActionRow buttons = (playing && currentTrack != null) ? 
 							ActionRow.of(pauseButton, skipButton, timeButton, 
-								infoButton) :
+								infoButton, queueButton) :
 							ActionRow.of(playButton, skipButton, timeButton, 
-								infoButton);
+								infoButton, queueButton);
 
 		return buttons;
 	}
@@ -305,16 +331,13 @@ public class PlayerEmbed {
 		skippedMembers = new ConcurrentLinkedQueue(new LinkedList<>());
 	}
 
-	private int getMins(long duration) {
-		return (int)(duration / 60000);
-	}
-
-	private int getSecs(long duration) {
-		return (int)(duration % 60000 / 1000);
-	}
-
-	private String getSecsStr(long duration) {
+	private String getMins(long duration) {
 		DecimalFormat df = new DecimalFormat("00");
-		return df.format(getSecs(duration));
+		return df.format(duration / 60000);
+	}
+
+	private String getSecs(long duration) {
+		DecimalFormat df = new DecimalFormat("00");
+		return df.format(duration % 60000 / 1000);
 	}
 }
