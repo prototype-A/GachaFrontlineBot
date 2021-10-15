@@ -155,11 +155,14 @@ public class PlayerEmbed {
 				} else if (buttonId.endsWith(QUEUE_BTN_ID_APPEND)) {
 					// Queued track list button clicked
 					if (this.queuedTracks.isEmpty()) {
+						// No queued tracks
 						event.reply("There are currently no other queued tracks")
 								.withEphemeral(true).subscribe();
 					} else {
+						// Display all queued tracks
 						String queueList = "";
-						long totalTimeToQueue = this.currentTrack.getPosition();
+						long totalTimeToQueue = this.currentTrack.getInfo().length - 
+							this.currentTrack.getPosition();
 						for (AudioTrack track: this.queuedTracks) {
 							String queueMin = getMins(totalTimeToQueue);
 							String queueSec = getSecs(totalTimeToQueue);
@@ -178,6 +181,7 @@ public class PlayerEmbed {
 					}
 				}
 			} else {
+				// Player stopped
 				event.reply("There is currently no audio track playing")
 						.withEphemeral(true).subscribe();
 			}
@@ -267,17 +271,17 @@ public class PlayerEmbed {
 
 		// Queued songs
 		String queueList = "";
-		int count = 0;
+		int tracksDisplayed = 0;
 		for (AudioTrack track: queuedTracks) {
 			// Limit queued track list
-			count++;
-			if (count <= 3) {
-				int numSongsInQueue = queuedTracks.size() - count;
+			if (tracksDisplayed >= 3) {
+				int numSongsInQueue = queuedTracks.size() - tracksDisplayed;
 				queueList += "(+" + numSongsInQueue + " more)";
 				break;
 			} else {
 				queueList += track.getInfo().title + "\n";
 			}
+			tracksDisplayed++;
 		}
 		if (!queueList.equals("")) {
 			embed = embed.addField("Up Next", queueList, false);

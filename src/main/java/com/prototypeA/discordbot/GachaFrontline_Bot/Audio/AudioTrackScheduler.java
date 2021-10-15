@@ -143,9 +143,11 @@ public final class AudioTrackScheduler extends AudioEventAdapter {
 		// Advance the player if the track completed naturally (FINISHED)
 		// or if the track cannot play (LOAD_FAILED)
 		if (endReason.mayStartNext) {
+			System.out.println("Track ended");
 			if (!trackQueue.isEmpty()) {
 				skip();
 			}
+		} else {
 			updatePlayerEmbed();
 		}
 	}
