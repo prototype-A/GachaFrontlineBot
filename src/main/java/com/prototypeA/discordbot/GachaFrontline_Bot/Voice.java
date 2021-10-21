@@ -3,6 +3,7 @@ package com.prototypeA.discordbot.GachaFrontline_Bot;
 import discord4j.core.event.domain.VoiceStateUpdateEvent;
 import discord4j.core.object.entity.channel.Channel;
 import discord4j.core.object.entity.channel.VoiceChannel;
+import discord4j.core.object.entity.Member;
 import discord4j.core.object.entity.User;
 import discord4j.core.object.VoiceState;
 import discord4j.voice.AudioProvider;
@@ -26,6 +27,33 @@ public abstract class Voice extends Messaging {
 	 */
 	public boolean joinUserVoiceChannel() {
 		return joinUserVoiceChannel(commandMessage.getAuthor().get());
+	}
+
+	/**
+	 * Attempts to connect to the voice channel that the
+	 * specified guild member is in.
+	 *
+	 * @param member The Member of the guild to join the voice channel of
+	 * @return Whether the bot joined the voice channel or not 
+	 * 			(guild member was or was not in a voice channel)
+	 */
+	public boolean joinUserVoiceChannel(Member member) {
+		if (member != null) {
+			// Join the specified user's voice channel
+			try {
+				VoiceChannel channel = member.getVoiceState()
+										.block()
+										.getChannel()
+										.block();
+
+				return joinVoiceChannel(channel);
+			} catch (Exception e) {
+				e.printStackTrace();
+				sendTempMessage("You are currently not in a voice channel");
+			}
+		}
+
+		return false;
 	}
 
 	/**

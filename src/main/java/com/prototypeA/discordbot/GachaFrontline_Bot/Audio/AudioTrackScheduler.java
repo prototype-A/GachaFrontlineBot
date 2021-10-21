@@ -8,7 +8,8 @@ import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
 import com.sedmelluq.discord.lavaplayer.track.AudioTrackEndReason;
 
 import discord4j.core.GatewayDiscordClient;
-import discord4j.core.object.entity.Message;
+import discord4j.core.object.entity.channel.TextChannel;
+import discord4j.core.object.entity.Member;
 
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.LinkedList;
@@ -35,23 +36,23 @@ public final class AudioTrackScheduler extends AudioEventAdapter {
 
 	public boolean queue(final AudioTrack track,
 							final GatewayDiscordClient gateway, 
-							final Message message) {
-		track.setUserData(message.getAuthorAsMember().block());
+							final TextChannel channel, final Member queuer) {
+		track.setUserData(queuer);
 		boolean playing = play(track, true);
-		updatePlayerEmbed(gateway, message);
+		updatePlayerEmbed(gateway, channel);
 
 		return playing;
 	}
 
 	public void queue(final AudioPlaylist playlist, 
 						final GatewayDiscordClient gateway, 
-						final Message message) {
+						final TextChannel channel, final Member queuer) {
 		for (AudioTrack track: playlist.getTracks()) {
-			track.setUserData(message.getAuthorAsMember().block());
+			track.setUserData(queuer);
 			play(track, true);
 		}
 
-		updatePlayerEmbed(gateway, message);
+		updatePlayerEmbed(gateway, channel);
 	}
 
 	private boolean play(final AudioTrack track, final boolean queue) {
@@ -89,10 +90,10 @@ public final class AudioTrackScheduler extends AudioEventAdapter {
 	}
 
 	private void updatePlayerEmbed(final GatewayDiscordClient gateway, 
-									final Message message) {
-		if (embed == null && message != null) {
+									final TextChannel channel) {
+		if (embed == null && channel != null) {
 			// Create embed message if it doesn't exist
-			embed = new PlayerEmbed(message, gateway, player.getPlayingTrack(),
+			embed = new PlayerEmbed(channel, gateway, player.getPlayingTrack(),
 									!player.isPaused(), trackQueue);
 		} else {
 			// Update the embed message
@@ -143,13 +144,12 @@ public final class AudioTrackScheduler extends AudioEventAdapter {
 		// Advance the player if the track completed naturally (FINISHED)
 		// or if the track cannot play (LOAD_FAILED)
 		if (endReason.mayStartNext) {
-			System.out.println("Track ended");
 			if (!trackQueue.isEmpty()) {
 				skip();
 			}
-		} else {
-			updatePlayerEmbed();
 		}
+
+		updatePlayerEmbed();
 	}
 
 	@Override

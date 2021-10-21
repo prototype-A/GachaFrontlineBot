@@ -1,6 +1,7 @@
 package com.prototypeA.discordbot.GachaFrontline_Bot;
 
 import discord4j.core.GatewayDiscordClient;
+import discord4j.core.object.command.Interaction;
 import discord4j.core.object.entity.Message;
 import discord4j.core.object.entity.Role;
 import discord4j.core.spec.EmbedCreateSpec;
@@ -31,6 +32,8 @@ public abstract class Command extends Voice implements Runnable {
 	public final String DESCRIPTION;
 	public final CommandParameter[] PARAMETERS;
 	protected Map<String, String> aliases;
+	protected Interaction interaction;
+	protected Map<String, String> params;
 
 
 	public Command(String command, String subcommand, CommandType[] commandTypes,
@@ -41,8 +44,18 @@ public abstract class Command extends Voice implements Runnable {
 		this.DESCRIPTION = desc;
 		this.PARAMETERS = parameters;
 		aliases = new HashMap<String, String>();
+		interaction = null;
+		params = new HashMap<String, String>();
 	}
 
+
+	public String getFullName() {
+		if (this.SUBCOMMAND != null && !this.SUBCOMMAND.equals("")) {
+			return this.COMMAND + " " + this.SUBCOMMAND;
+		}
+
+		return this.COMMAND;
+	}
 
 	/**
 	 * Adds an alias to which the command can also be called by
@@ -63,10 +76,33 @@ public abstract class Command extends Voice implements Runnable {
 		return aliases;
 	}
 
+
 	/**
 	 * The functionality of the command when it is executed
 	 */
 	public abstract void run();
+
+
+	/**
+	 * Used when the command is invoked by a chat "slash" input command 
+	 * to store parameters for use during command execution
+	 *
+	 * @param key The parameter to store
+	 * @param val The value of the parameter to store
+	 */
+	public void setParam(String key, String val) {
+		params.put(key, val);
+	}
+
+	/**
+	 * Used when the command is invoked by a chat "slash" input command 
+	 * to store the interaction between the user and the bot
+	 *
+	 * @param interaction The chat input command interaction
+	 */
+	public void setInteraction(Interaction interaction) {
+		this.interaction = interaction;
+	}
 
 	/**
 	 * Fetch all arguments passed with the issued bot command
@@ -75,18 +111,21 @@ public abstract class Command extends Voice implements Runnable {
 	 * @return A string array containing all arguments passed to the command
 	 */
 	protected String[] getArgs() {
+		if (commandMessage != null) {
+			// Initialize as no arguments passed
+			String[] args = new String[0];
 
-		// Initialize as no arguments passed
-		String[] args = new String[0];
+			// Check if there is any spaces => there are arguments passed
+			String messageContents = commandMessage.getContent();
+			if (messageContents.contains(" ")) {
+				// Store words in message as arguments, splitting on space
+		        args = messageContents.substring(messageContents.indexOf(' ') + 1).split(" ");
+		    }
 
-		// Check if there is any spaces => there are arguments passed
-		String messageContents = commandMessage.getContent();
-		if (messageContents.contains(" ")) {
-			// Store words in message as arguments, splitting on space
-            args = messageContents.substring(messageContents.indexOf(' ') + 1).split(" ");
-        }
+			return args;
+		}
 
-		return args;
+		return null;
 	}
 
 	/**
@@ -97,24 +136,28 @@ public abstract class Command extends Voice implements Runnable {
 	 * @return All arguments passed to the command as an entire string
 	 */
 	protected String getAsOneArg(boolean module) {
-		// Initialize as no arguments passed
-		String arg = null;
+		if (commandMessage != null) {
+			// Initialize as no arguments passed
+			String arg = null;
 
-		// Check if there is any spaces => there are arguments passed
-		String content = commandMessage.getContent();
-		if (content.contains(" ")) {
-			int firstSpaceIndex = content.indexOf(" ");
-			int secondSpaceIndex = content.indexOf(" ", firstSpaceIndex + 1);
-			if (!module || secondSpaceIndex == -1) {
-				// Remove only first word (command)
-            	arg = content.substring(firstSpaceIndex + 1).trim();
-			} else {
-				// Remove second word as well (subcommand)
-				arg = content.substring(secondSpaceIndex).trim();
-			}
-        }
+			// Check if there is any spaces => there are arguments passed
+			String content = commandMessage.getContent();
+			if (content.contains(" ")) {
+				int firstSpaceIndex = content.indexOf(" ");
+				int secondSpaceIndex = content.indexOf(" ", firstSpaceIndex + 1);
+				if (!module || secondSpaceIndex == -1) {
+					// Remove only first word (command)
+		        	arg = content.substring(firstSpaceIndex + 1).trim();
+				} else {
+					// Remove second word as well (subcommand)
+					arg = content.substring(secondSpaceIndex).trim();
+				}
+		    }
 
-		return arg;
+			return arg;
+		}
+
+		return null;
 	}
 
 	/**
@@ -199,11 +242,14 @@ public abstract class Command extends Voice implements Runnable {
 		String dataPath = System.getProperty("user.dir");
 		try {
 			// Load data
-			return new JSONObject(new Scanner(new File(dataPath + fileName)).useDelimiter("\\A").next());
+			return new JSONObject(new Scanner(new File(dataPath + fileName))
+				.useDelimiter("\\A").next());
 		} catch (FileNotFoundException e) {
-			ConsoleUtils.printError("File \"" + dataPath + fileName + "\" does not exist");
+			ConsoleUtils.printError("File \"" + dataPath + fileName + 
+				"\" does not exist");
 		} catch (Exception e) {
-			ConsoleUtils.printError(e.getMessage() + " occurred while attempting to read the data");
+			ConsoleUtils.printError(e.getMessage() + 
+				" occurred while attempting to read the data");
 			e.printStackTrace();
 		}
 
@@ -283,16 +329,20 @@ public abstract class Command extends Voice implements Runnable {
 	public String getHelp() {
 		return "";
 	}
-	
+
+
+	/**
+	 * Returns the command in JSON form to be registered
+	 * with Discord as an application command
+	 */
 	public String generateCommandJson() {
 		String json = "{\n";
 
 		// Name
-		json += "\t\"name\": \"" + COMMAND + 
-				(SUBCOMMAND.equals("") ? "" : " " + SUBCOMMAND) + "\",\n";
+		json += "\t\"name\": \"" + getFullName().toLowerCase() + "\",\n";
 
 		// Description
-		json += "\t\"desc\": \"" + DESCRIPTION + "\",\n";
+		json += "\t\"description\": \"" + DESCRIPTION + "\",\n";
 
 		// Parameters
 		if (PARAMETERS.length > 0) {
@@ -301,8 +351,8 @@ public abstract class Command extends Voice implements Runnable {
 			for (int i = 0; i < PARAMETERS.length; i++) {
 				CommandParameter param = PARAMETERS[i];
 				json += "\t\t{\n" + 
-					"\t\t\t\"name\": \"" + param.getName() + "\",\n" + 
-					"\t\t\t\"desc\": \"" + param.getDescription() + "\",\n" + 
+					"\t\t\t\"name\": \"" + param.getName().toLowerCase() + "\",\n" + 
+					"\t\t\t\"description\": \"" + param.getDescription() + "\",\n" + 
 					"\t\t\t\"type\": " + param.getType() + ",\n" + 
 					"\t\t\t\"required\": " + param.isRequired() + "\n" + 
 					"\t\t}";

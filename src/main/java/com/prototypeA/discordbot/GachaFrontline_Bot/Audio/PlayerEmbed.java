@@ -8,6 +8,7 @@ import discord4j.core.event.domain.interaction.ButtonInteractionEvent;
 import discord4j.core.GatewayDiscordClient;
 import discord4j.core.object.component.ActionRow;
 import discord4j.core.object.component.Button;
+import discord4j.core.object.entity.channel.TextChannel;
 import discord4j.core.object.entity.channel.VoiceChannel;
 import discord4j.core.object.entity.Member;
 import discord4j.core.object.entity.Message;
@@ -45,10 +46,10 @@ public class PlayerEmbed {
 	private Queue<Member> skippedMembers;
 
 
-	public PlayerEmbed(Message message, 
+	public PlayerEmbed(TextChannel channel, 
 						GatewayDiscordClient gateway, AudioTrack currentTrack,
 						boolean playing, Queue<AudioTrack> queuedTracks) {
-		this.GUILD_ID = message.getGuild().block().getId();
+		this.GUILD_ID = channel.getGuild().block().getId();
 		this.GATEWAY = gateway;
 
 		this.currentTrack = currentTrack;
@@ -59,8 +60,7 @@ public class PlayerEmbed {
 		this.skippedMembers = new ConcurrentLinkedQueue(new LinkedList<>());
 
 		// Create and send message
-		this.message = message.getChannel().block()
-						.createMessage(MessageCreateSpec.create()
+		this.message = channel.createMessage(MessageCreateSpec.create()
 							.withEmbeds(createEmbed())
 							.withComponents(createButtons(this.playing))
 						).share().block();

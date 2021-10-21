@@ -29,7 +29,9 @@ public abstract class Messaging {
 	 * invoke a bot command
 	 */
 	protected void deleteCommandMessage() {
-		commandMessage.delete().subscribe();
+		if (commandMessage != null) {
+			commandMessage.delete().subscribe();
+		}
 	}
 
 	/**

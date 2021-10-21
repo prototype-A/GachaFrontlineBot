@@ -10,6 +10,8 @@ import com.sedmelluq.discord.lavaplayer.track.playback.NonAllocatingAudioFrameBu
 
 import discord4j.common.util.Snowflake;
 import discord4j.core.GatewayDiscordClient;
+import discord4j.core.object.entity.channel.TextChannel;
+import discord4j.core.object.entity.Member;
 import discord4j.core.object.entity.Message;
 import discord4j.voice.AudioProvider;
 
@@ -92,11 +94,12 @@ public final class GuildAudioManager {
 	 *
 	 * @param track The audio track to queue up
 	 * @param gateway The Discord gateway of the bot
-	 * @param message The message that queued up the audio
+	 * @param channel The channel of the message/interaction that queued up the audio
+	 * @param queuer The member of the guild that queued the audio
 	 */
 	public void queue(AudioTrack track, GatewayDiscordClient gateway, 
-						Message message) {
-		scheduler.queue(track, gateway, message);
+						TextChannel channel, Member queuer) {
+		scheduler.queue(track, gateway, channel, queuer);
 	}
 
 	/**
@@ -104,11 +107,12 @@ public final class GuildAudioManager {
 	 *
 	 * @param track The audio playlist to queue up
 	 * @param gateway The Discord gateway of the bot
-	 * @param message The message that queued up the audio
+	 * @param channel The channel of the message/interaction that queued up the audio
+	 * @param queuer The member of the guild that queued the audio
 	 */
 	public void queue(AudioPlaylist playlist, GatewayDiscordClient gateway, 
-						Message message) {
-		scheduler.queue(playlist, gateway, message);
+						TextChannel channel, Member queuer) {
+		scheduler.queue(playlist, gateway, channel, queuer);
 	}
 
 	public void pausePlayback() {
