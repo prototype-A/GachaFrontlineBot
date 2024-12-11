@@ -6,6 +6,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Description;
 import org.springframework.context.annotation.PropertySource;
 import org.springframework.context.annotation.PropertySources;
+import org.springframework.context.annotation.Scope;
 
 import discord4j.core.DiscordClient;
 
@@ -22,6 +23,7 @@ public class ClientConfiguration {
 
     @Bean
     @Description("Configures and creates a (non-gateway) DiscordClient with the token provided in \"./bot.properties\"")
+    @Scope("singleton")
     public DiscordClient discordClient() {
         return DiscordClient.create(token);
     }
