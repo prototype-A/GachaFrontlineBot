@@ -29,6 +29,11 @@ dependencies {
     implementation "com.discord4j:discord4j-core:3.2.7"
 }
 
+// Parameter name retention for Spring Framework 6.1+
+tasks.withType(JavaCompile).configureEach {
+    options.compilerArgs.add("-parameters")
+}
+
 testing {
     suites {
         // Configure the built-in test suite
@@ -40,7 +45,7 @@ testing {
 }
 
 tasks.named("test") {
-  useJUnitPlatform()
+    useJUnitPlatform()
 }
 
 // Apply a specific Java toolchain to ease working on different environments
