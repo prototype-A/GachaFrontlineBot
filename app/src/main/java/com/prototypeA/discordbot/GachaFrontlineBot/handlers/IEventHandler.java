@@ -8,9 +8,14 @@ import discord4j.core.event.domain.Event;
 import reactor.core.publisher.Mono;
 
 
+/**
+ * Interface that serves as the base of implementing handlers 
+ * of various Discord events dispatched by the gateway client
+ */
 public interface IEventHandler<T extends Event> {
 
-    static final Logger LOG = LoggerFactory.getLogger(IEventHandler.class);
+    final Logger LOG = LoggerFactory.getLogger(IEventHandler.class);
+
 
     /**
      * Returns the class of the event type that the 
@@ -21,11 +26,20 @@ public interface IEventHandler<T extends Event> {
     public Class<T> getEventClass();
 
     /**
-     * The method that executes upon receiving an event 
-     * that the implementing handler is tasked to handle
+     * Returns the name of the class
+     * 
+     * @return The name of this event handler
+     */
+    public default String getName() {
+        return getClass().getSimpleName();
+    }
+
+    /**
+     * The method that is executed upon receiving an event of the 
+     * type that the implementing handler is tasked to handle
      * 
      * @param event The event to handle
-     * @return An empty mono upon completion of event handling
+     * @return An empty Mono upon completion of event handling
      */
     public Mono<Void> handle(T event);
     
@@ -34,10 +48,10 @@ public interface IEventHandler<T extends Event> {
      * during the handling of an event
      * 
      * @param error The error thrown
-     * @return An empty mono
+     * @return An empty Mono after handling the error
      */
     public default Mono<Void> handleError(Throwable error) {
-        LOG.error("Failed to process " + getEventClass().getSimpleName(), error);
+        LOG.error("Failed to handle " + getEventClass().getSimpleName(), error);
         return Mono.empty();
     }
 }
