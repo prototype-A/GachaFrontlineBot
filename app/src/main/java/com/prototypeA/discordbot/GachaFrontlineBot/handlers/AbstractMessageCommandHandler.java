@@ -1,17 +1,20 @@
 package com.prototypeA.discordbot.GachaFrontlineBot.handlers;
 
+import java.util.Optional;
+
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.PropertySource;
 import org.springframework.context.annotation.PropertySources;
 
 import discord4j.core.event.domain.message.MessageCreateEvent;
+import discord4j.core.object.entity.User;
 
 import reactor.core.publisher.Mono;
 
 
 /**
  * The base of extending handlers tasked with running commands 
- * invoked through sent messages
+ * invoked through sent messages.
  */
 @PropertySources({
     @PropertySource("file:bot.properties"),
@@ -38,7 +41,7 @@ public abstract class AbstractMessageCommandHandler extends AbstractCommandHandl
     /**
      * Attempts to remove the prefix from the start of the 
      * sent message and returns the first word delimited 
-     * by a space
+     * by a space.
      * 
      * @param event The event containing the message sent
      * @return The name of the command invoked by the message
@@ -51,7 +54,7 @@ public abstract class AbstractMessageCommandHandler extends AbstractCommandHandl
     }
 
     /**
-     * Returns the text content contained in the sent message
+     * Returns the text content contained in the sent message.
      * 
      * @param event The event containing the message sent
      * @return The string content of the message
@@ -70,16 +73,18 @@ public abstract class AbstractMessageCommandHandler extends AbstractCommandHandl
     public Mono<Void> handle(MessageCreateEvent event) {
         return Mono.just(event)
             // Ignore bot requests
-            .filter(message -> message.getMember()
-                .isPresent() && !message.getMember()
-                .get()
-                .isBot())
-            // Not a 
+            .filter(message -> {
+                Optional<User> user = message.getMessage()
+                    .getAuthor();
+                return user.isPresent() && !user.get()
+                    .isBot();
+            })
+            // Ignore slash command messages (also emits MessageCreateEvent)
             .filter(interaction -> !interaction.getMessage()
                 .getInteraction()
                 .isPresent())
             // Message starts with prefix (if prefixed command)
-            .filter(_ -> !isCommand(event))
+            .filter(message -> !isCommand(message))
             // Run invoked command
             .filter(command -> getInvokedCommand(command)
                 .equalsIgnoreCase(commandName))
@@ -88,7 +93,7 @@ public abstract class AbstractMessageCommandHandler extends AbstractCommandHandl
 
     /**
      * Returns whether the sent message starts with the specified 
-     * command prefix
+     * command prefix.
      * 
      * @return True if the message starts with the prefix, otherwise false
      */

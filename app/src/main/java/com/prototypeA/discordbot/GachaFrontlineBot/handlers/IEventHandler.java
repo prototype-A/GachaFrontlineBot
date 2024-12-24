@@ -10,7 +10,7 @@ import reactor.core.publisher.Mono;
 
 /**
  * Interface that serves as the base of implementing handlers 
- * of various Discord events dispatched by the gateway client
+ * of various Discord events dispatched by the gateway client.
  */
 public interface IEventHandler<T extends Event> {
 
@@ -19,14 +19,14 @@ public interface IEventHandler<T extends Event> {
 
     /**
      * Returns the class of the event type that the 
-     * implementing handler will handle
+     * implementing handler will handle.
      * 
      * @return The class of the event to handle
      */
     public Class<T> getEventClass();
 
     /**
-     * Returns the name of the class
+     * Returns the name of the class.
      * 
      * @return The name of this event handler
      */
@@ -36,7 +36,7 @@ public interface IEventHandler<T extends Event> {
 
     /**
      * The method that is executed upon receiving an event of the 
-     * type that the implementing handler is tasked to handle
+     * type that the implementing handler is tasked to handle.
      * 
      * @param event The event to handle
      * @return An empty Mono upon completion of event handling
@@ -45,7 +45,7 @@ public interface IEventHandler<T extends Event> {
     
     /**
      * The method that is executed when an error occurs 
-     * during the handling of an event
+     * during the handling of an event.
      * 
      * @param error The error thrown
      * @return An empty Mono after handling the error

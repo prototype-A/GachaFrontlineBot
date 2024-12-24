@@ -9,7 +9,7 @@ import reactor.core.publisher.Mono;
 
 /**
  * The base of extending handlers tasked with running commands 
- * invoked through slash ("/") interactions
+ * invoked through slash ("/") interactions.
  */
 public abstract class AbstractSlashCommandHandler extends AbstractCommandHandler<ChatInputInteractionEvent> {
 
@@ -21,7 +21,7 @@ public abstract class AbstractSlashCommandHandler extends AbstractCommandHandler
     /**
      * Returns the JSON representation of this command 
      * to be sent to Discord in order to register it as 
-     * a guild/global slash command
+     * a guild/global slash command.
      * 
      * @return The JSON representation of this command
      */
@@ -52,7 +52,7 @@ public abstract class AbstractSlashCommandHandler extends AbstractCommandHandler
 
     /**
      * The method that contains the code to run when 
-     * the command is invoked via a sent message
+     * the command is invoked via a sent message.
      * 
      * @param event The event containing the message sent
      * @return An empty Mono upon completion of execution

@@ -10,7 +10,7 @@ import reactor.core.publisher.Mono;
 
 /**
  * The base of all extending handlers tasked with 
- * running commands invoked by users
+ * running commands invoked by users.
  */
 public abstract class AbstractCommandHandler<T extends Event> implements IEventHandler<T> {
     
@@ -23,7 +23,7 @@ public abstract class AbstractCommandHandler<T extends Event> implements IEventH
 
 
     /**
-     * Returns the string that is used to invoke this command
+     * Returns the string that is used to invoke this command.
      * 
      * @return The name of this command
      */
@@ -33,8 +33,9 @@ public abstract class AbstractCommandHandler<T extends Event> implements IEventH
 
     /**
      * The method that contains the code to run when 
-     * the command is invoked
+     * the command is invoked.
      * 
+     * @param <T> The emitted Discord event
      * @param event The event containing the command and its relevent data
      * @return An empty Mono upon completion of execution
      */
