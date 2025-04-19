@@ -39,7 +39,7 @@ final class SettingTest {
             Setting.Type.Role
         );
         Setting testMultipleValuesSetting2 = new Setting(
-            "Multiple Values Setting 3",
+            "Multiple Values Setting 2",
             "",
             "1",
             Setting.Type.Role

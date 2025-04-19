@@ -28,11 +28,11 @@ final class CommandTest {
     CommandTest() {
         // Not Admin, Not Single Instance, Can Disable
         TEST_COMMAND_1 = new DieRollCommand();
-        COMMAND_1_NAME = "roll";
+        COMMAND_1_NAME = "ROLL";
 
         // Admin, Single Instance, Cannot Disable
         TEST_COMMAND_2 = new SettingsCommand();
-        COMMAND_2_NAME = "settings";
+        COMMAND_2_NAME = "Settings";
     }
 
     @Test
@@ -43,16 +43,16 @@ final class CommandTest {
 
     @Test
     void commandNameTest() {
-        assertTrue(TEST_COMMAND_1.getCommandName().equals(COMMAND_1_NAME));
-        assertTrue(TEST_COMMAND_2.getCommandName().equals(COMMAND_2_NAME));
+        assertTrue(TEST_COMMAND_1.getCommandName().equals(COMMAND_1_NAME.toLowerCase()));
+        assertTrue(TEST_COMMAND_2.getCommandName().equals(COMMAND_2_NAME.toLowerCase()));
     }
 
     @Test
     void settingsTest() {
         List<String> command1Settings = TEST_COMMAND_1.getDefaultSettings().stream().map(setting -> setting.getName()).toList();
-        assertTrue(command1Settings.contains("Enable Command: /" + COMMAND_1_NAME));
+        assertTrue(command1Settings.contains("Enable Command: /" + COMMAND_1_NAME.toLowerCase()));
         List<String> command2Settings = TEST_COMMAND_2.getDefaultSettings().stream().map(setting -> setting.getName()).toList();
-        assertFalse(command2Settings.contains("Enable Command: /" + COMMAND_2_NAME));
+        assertFalse(command2Settings.contains("Enable Command: /" + COMMAND_2_NAME.toLowerCase()));
 
         assertThrows(UnsupportedOperationException.class, () -> TEST_COMMAND_1.getDefaultSettings().add(null));
         assertThrows(UnsupportedOperationException.class, () -> TEST_COMMAND_1.getDefaultSettings().remove(null));
