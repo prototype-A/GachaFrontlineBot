@@ -2,8 +2,10 @@ package com.prototypeA.discordbot.GachaFrontlineBot.util;
 
 import java.util.Optional;
 
+import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
 import discord4j.core.event.domain.message.MessageCreateEvent;
 import discord4j.core.object.entity.User;
+import discord4j.core.spec.InteractionApplicationCommandCallbackSpec;
 import discord4j.core.spec.MessageCreateSpec;
 import discord4j.rest.util.AllowedMentions;
 
@@ -66,17 +68,28 @@ public final class MessageUtils {
     }
 
     /**
-     * Sends a message to the same channel as the sent message.
+     * Sends a message to the same channel as the interaction to reply to.
      * 
-     * @param event The emitted event of the message sent.
-     * @param content The text to send in the message.
-     * @return An empty {@code Mono} upon sending the message.
+     * @param event The emitted event of the interaction to reply to.
+     * @param content The text to send in the reply.
+     * @param ephemeral True if the reply should only be seen by the 
+     * interacting user.
+     * @param pingInvoker True if the interaction user should be pinged 
+     * when their message is replied to.
+     * @return An empty {@code Mono} upon sending the reply.
      */
-    public static Mono<Void> sendMessage(MessageCreateEvent event, String content) {
-        return event.getMessage()
-            .getChannel()
-            .flatMap(channel -> channel.createMessage(content)
-                .then());
+    public static Mono<Void> sendReply(
+            ChatInputInteractionEvent event,
+            String content,
+            boolean ephemeral,
+            boolean pingInvoker) {
+        return event.reply(InteractionApplicationCommandCallbackSpec.builder()
+            .content(content)
+            .allowedMentions(AllowedMentions.builder()
+                .repliedUser(pingInvoker)
+                .build())
+            .ephemeral(ephemeral)
+            .build());
     }
 
     /**
@@ -88,7 +101,10 @@ public final class MessageUtils {
      * should be pinged when their message is replied to.
      * @return An empty {@code Mono} upon sending the reply.
      */
-    public static Mono<Void> sendMessageReply(MessageCreateEvent event, String content, boolean pingInvoker) {
+    public static Mono<Void> sendReply(
+            MessageCreateEvent event,
+            String content,
+            boolean pingInvoker) {
         return event.getMessage()
             .getChannel()
             .flatMap(channel -> channel.createMessage(MessageCreateSpec.builder()
