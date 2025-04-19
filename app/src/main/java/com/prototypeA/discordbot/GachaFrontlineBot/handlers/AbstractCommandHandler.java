@@ -1,15 +1,21 @@
 package com.prototypeA.discordbot.GachaFrontlineBot.handlers;
 
+import com.prototypeA.discordbot.GachaFrontlineBot.AbstractHasDefaultSettings;
+import com.prototypeA.discordbot.GachaFrontlineBot.ServerSettingsRepository;
 import com.prototypeA.discordbot.GachaFrontlineBot.Setting;
 import com.prototypeA.discordbot.GachaFrontlineBot.permissions.Permissions;
 
-import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
+
+import discord4j.common.util.Snowflake;
 import discord4j.core.event.domain.Event;
 
 import reactor.core.publisher.Mono;
@@ -19,85 +25,130 @@ import reactor.core.publisher.Mono;
  * The base of all extending handlers tasked with 
  * running commands invoked by users.
  */
-public abstract class AbstractCommandHandler<T extends Event> implements IEventHandler<T> {
+public abstract class AbstractCommandHandler<T extends Event> extends AbstractHasDefaultSettings implements IEventHandler<T> {
     
     protected final Logger LOG = LoggerFactory.getLogger(this.getClass());
     protected final String COMMAND_NAME;
+    protected final String COMMAND_DESC;
+    protected final boolean SINGLE_INSTANCE;
+    protected String inUseMessage = "This command is currently in use.";
+    private final Set<Snowflake> SERVERS_USING_COMMAND;
     protected final boolean IS_ADMIN_COMMAND;
-    protected final List<Setting> DEFAULT_SETTINGS;
 
     @Autowired
     protected Permissions permissions;
+    @Autowired @Lazy
+    protected ServerSettingsRepository serverSettings;
 
     /**
-     * Constructs a generic command handler with the specified name of 
-     * the command it will handle.
+     * Constructs a generic command handler.
      * 
      * @param commandName The string that will invoke this command.
+     * @param description The description of this command.
      */
-    protected AbstractCommandHandler(String commandName) {
-        this(commandName, List.of());
+    protected AbstractCommandHandler(String commandName, String description) {
+        this(commandName, description, List.of());
     }
 
     /**
-     * Constructs a generic command handler with the specified name of 
-     * the command it will handle along with its default settings.
+     * Constructs a generic command handler.
      * 
      * @param commandName The string that will invoke this command.
+     * @param description The description of this command.
      * @param defaultSettings The list of this command's available 
      * settings initialized with its default values.
      */
-    protected AbstractCommandHandler(String commandName,
+    protected AbstractCommandHandler(
+            String commandName,
+            String description,
             List<Setting> defaultSettings) {
-        this(commandName, defaultSettings, false);
+        this(commandName, description, defaultSettings, false);
     }
 
     /**
-     * Constructs a generic command handler with the specified name of 
-     * the command it will handle along with its default settings.
+     * Constructs a generic command handler.
      * 
      * @param commandName The string that will invoke this command.
+     * @param description The description of this command.
      * @param defaultSettings The list of this command's available 
      * settings initialized with its default values.
-     * @param cannotDisable Whether or not this command can be disabled.
+     * @param onlyAllowOneInstance Prevents others in the same server 
+     * from invoking this command when it is currently in use.
      */
-    protected AbstractCommandHandler(String commandName,
+    protected AbstractCommandHandler(
+            String commandName,
+            String description,
             List<Setting> defaultSettings,
-            boolean cannotDisable) {
-        this(commandName, defaultSettings, cannotDisable, false);
+            boolean onlyAllowOneInstance) {
+        this(
+            commandName,
+            description,
+            defaultSettings,
+            onlyAllowOneInstance,
+            false
+        );
     }
 
     /**
-     * Constructs a generic command handler with the specified name of 
-     * the command it will handle along with its default settings.
+     * Constructs a generic command handler.
      * 
      * @param commandName The string that will invoke this command.
+     * @param description The description of this command.
      * @param defaultSettings The list of this command's available 
      * settings initialized with its default values.
-     * @param cannotDisable Whether or not this command can be disabled.
+     * @param onlyAllowOneInstance Prevents others in the same server 
+     * from invoking this command when it is currently in use.
      * @param isAdminCommand Whether or not the invoker requires admin 
      * permissions to invoke this command.
      */
-    protected AbstractCommandHandler(String commandName,
+    protected AbstractCommandHandler(
+            String commandName,
+            String description,
             List<Setting> defaultSettings,
-            boolean cannotDisable,
+            boolean onlyAllowOneInstance,
             boolean isAdminCommand) {
-        COMMAND_NAME = commandName;
-        IS_ADMIN_COMMAND = isAdminCommand;
+        this(
+            commandName,
+            description,
+            defaultSettings,
+            onlyAllowOneInstance,
+            isAdminCommand,
+            false
+        );
+    }
 
-        // Store default settings
-        DEFAULT_SETTINGS = new ArrayList<>();
-        if (!cannotDisable) {
-            DEFAULT_SETTINGS.add(
-                new Setting(
-                    String.format("Enable Command: /%s", COMMAND_NAME),
-                    "Is this command able to be used in this server?",
-                    "True",
-                    Setting.Type.Boolean
-                )
-            );
-        }
-        defaultSettings.forEach(DEFAULT_SETTINGS::add);
+    /**
+     * Constructs a generic command handler.
+     * 
+     * @param commandName The string that will invoke this command.
+     * @param description The description of this command.
+     * @param defaultSettings The list of this command's available 
+     * settings initialized with its default values.
+     * @param onlyAllowOneInstance Prevents others in the same server 
+     * from invoking this command when it is currently in use.
+     * @param isAdminCommand Whether or not the invoker requires admin 
+     * permissions to invoke this command.
+     * @param cannotDisable Whether or not this command can be disabled.
+     */
+    protected AbstractCommandHandler(
+            String commandName,
+            String description,
+            List<Setting> defaultSettings,
+            boolean onlyAllowOneInstance,
+            boolean isAdminCommand,
+            boolean cannotDisable) {
+        super(
+            "Command: /" + commandName.toLowerCase(),
+            description,
+            defaultSettings,
+            cannotDisable
+        );
+
+        COMMAND_NAME = commandName.toLowerCase();
+        COMMAND_DESC = description;
+        SINGLE_INSTANCE = onlyAllowOneInstance;
+        SERVERS_USING_COMMAND = new HashSet<>();
+        IS_ADMIN_COMMAND = isAdminCommand;
     }
 
 
@@ -111,13 +162,43 @@ public abstract class AbstractCommandHandler<T extends Event> implements IEventH
     }
 
     /**
-     * Returns the list of settings with their default values 
-     * for this command.
+     * Returns whether this command requires elevated permissions to invoke.
      * 
-     * @return The list of this command's default settings.
+     * @return True if this command requires elevated permissions to invoke.
      */
-    public List<Setting> getDefaultSettings() {
-        return DEFAULT_SETTINGS;
+    public boolean isAdminCommand() {
+        return IS_ADMIN_COMMAND;
+    }
+
+    /**
+     * Returns whether the specified user is the same user that invoked 
+     * the command (i.e. the author of the message that this command 
+     * replied to).
+     * 
+     * @param event The emitted event containing the invoking user.
+     * @param userId The ID of the user to compare to.
+     * @return True if the user in the emitted event is the same user that 
+     * invoked the command.
+     */
+    protected abstract boolean isInvokingUser(Event event, Snowflake userId);
+
+    /**
+     * Adds the specified server to the set of servers that this 
+     * command is currently running in, preventing other users in 
+     * those same servers from invoking this command while it is 
+     * still running.
+     * 
+     * @param serverId The ID of the server that this command 
+     * is currently running in.
+     * @return True if this command was successfully locked 
+     * for the specified server.
+     */
+    protected boolean lockCommandForServer(Snowflake serverId) {
+        if (serverId == null || !SINGLE_INSTANCE) {
+            return false;
+        }
+
+        return SERVERS_USING_COMMAND.add(serverId);
     }
 
     /**
@@ -143,4 +224,18 @@ public abstract class AbstractCommandHandler<T extends Event> implements IEventH
      * @return An empty {@code Mono} upon completion of execution.
      */
     protected abstract Mono<Void> run(T event);
+
+    /**
+     * Removes the specified server from the set of servers 
+     * that this command is currently running in, allowing 
+     * other users in those servers to invoke this command.
+     * 
+     * @param serverId The ID of the server that this command 
+     * is currently running in.
+     * @return True if this command was previously locked for 
+     * the specified server and was successfully unlocked.
+     */
+    protected boolean unlockCommandForServer(Snowflake serverId) {
+        return SERVERS_USING_COMMAND.remove(serverId);
+    }
 }

@@ -5,6 +5,8 @@ import com.prototypeA.discordbot.GachaFrontlineBot.permissions.ServerPermissions
 
 import java.util.List;
 
+import discord4j.common.util.Snowflake;
+import discord4j.core.event.domain.Event;
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
 import discord4j.core.event.domain.message.MessageCreateEvent;
 import discord4j.core.object.entity.Member;
@@ -20,59 +22,115 @@ import reactor.core.publisher.Mono;
 public abstract class AbstractSlashCommandHandler extends AbstractCommandHandler<ChatInputInteractionEvent> {
 
     /**
-     * Constructs an application (slash) command handler with the specified 
-     * name of the command it will handle.
+     * Constructs a command handler that handles when the command 
+     * is invoked through an application (slash) interaction.
      * 
      * @param commandName The string that will invoke this command.
+     * @param description The description of this command.
      */
-    protected AbstractSlashCommandHandler(String commandName) {
-        this(commandName, List.of());
+    protected AbstractSlashCommandHandler(String commandName, String description) {
+        this(commandName, description, List.of());
     }
 
     /**
-     * Constructs an application (slash) command handler with the specified 
-     * name of the command it will handle along with its default settings.
+     * Constructs a command handler that handles when the command 
+     * is invoked through an application (slash) interaction.
      * 
      * @param commandName The string that will invoke this command.
+     * @param description The description of this command.
      * @param defaultSettings The list of this command's available 
      * settings initialized with its default values.
      */
-    protected AbstractSlashCommandHandler(String commandName,
+    protected AbstractSlashCommandHandler(
+            String commandName,
+            String description,
             List<Setting> defaultSettings) {
-        this(commandName, defaultSettings, false);
+        this(commandName, description, defaultSettings, false);
     }
 
     /**
-     * Constructs an application (slash) command handler with the specified 
-     * name of the command it will handle along with its default settings.
+     * Constructs a command handler that handles when the command 
+     * is invoked through an application (slash) interaction.
      * 
      * @param commandName The string that will invoke this command.
+     * @param description The description of this command.
      * @param defaultSettings The list of this command's available 
      * settings initialized with its default values.
-     * @param cannotDisable Whether or not this command can be disabled.
+     * @param onlyAllowOneInstance Prevents others in the same server 
+     * from invoking this command when it is currently in use.
      */
-    protected AbstractSlashCommandHandler(String commandName,
+    protected AbstractSlashCommandHandler(
+            String commandName,
+            String description,
             List<Setting> defaultSettings,
-            boolean cannotDisable) {
-        this(commandName, defaultSettings, cannotDisable, false);
+            boolean onlyAllowOneInstance) {
+        this(
+            commandName,
+            description,
+            defaultSettings,
+            onlyAllowOneInstance,
+            false
+        );
     }
 
     /**
-     * Constructs an application (slash) command handler with the specified 
-     * name of the command it will handle along with its default settings.
+     * Constructs a command handler that handles when the command 
+     * is invoked through an application (slash) interaction.
      * 
      * @param commandName The string that will invoke this command.
+     * @param description The description of this command.
      * @param defaultSettings The list of this command's available 
      * settings initialized with its default values.
-     * @param cannotDisable Whether or not this command can be disabled.
+     * @param onlyAllowOneInstance Prevents others in the same server 
+     * from invoking this command when it is currently in use.
      * @param isAdminCommand Whether or not the invoker requires admin 
      * permissions to invoke this command.
      */
-    protected AbstractSlashCommandHandler(String commandName,
+    protected AbstractSlashCommandHandler(
+            String commandName,
+            String description,
             List<Setting> defaultSettings,
-            boolean cannotDisable,
+            boolean onlyAllowOneInstance,
             boolean isAdminCommand) {
-        super(commandName, defaultSettings, cannotDisable, isAdminCommand);
+        this(
+            commandName,
+            description,
+            defaultSettings,
+            onlyAllowOneInstance,
+            isAdminCommand,
+            false
+        );
+    }
+
+    /**
+     * Constructs a command handler that handles when the command 
+     * is invoked through an application (slash) interaction.
+     * 
+     * @param commandName The string that will invoke this command.
+     * @param description The description of this command.
+     * @param defaultSettings The list of this command's available 
+     * settings initialized with its default values.
+     * @param onlyAllowOneInstance Prevents others in the same server 
+     * from invoking this command when it is currently in use.
+     * @param isAdminCommand Whether or not the invoker requires admin 
+     * permissions to invoke this command.
+     * @param cannotDisable Whether or not this command can be disabled.
+     */
+    protected AbstractSlashCommandHandler(
+            String commandName,
+            String description,
+            List<Setting> defaultSettings,
+            boolean onlyAllowOneInstance,
+            boolean isAdminCommand,
+            boolean cannotDisable) {
+        super(
+            commandName,
+            description,
+            defaultSettings,
+            onlyAllowOneInstance,
+            isAdminCommand,
+            cannotDisable
+        );
     }
 
 
@@ -108,9 +166,23 @@ public abstract class AbstractSlashCommandHandler extends AbstractCommandHandler
             .filter(command -> !command.getInteraction()
                 .getUser()
                 .isBot())
-            // Matches invoked command
+            // Invoked this command?
             .filter(command -> command.getCommandName()
                 .equalsIgnoreCase(COMMAND_NAME))
+            // Is command enabled for that server?
+            .filter(command -> {
+                try {
+                    return Boolean.parseBoolean(serverSettings.getServerSettings(command.getInteraction()
+                        .getGuildId()
+                        .get()
+                        .asLong())
+                        .get("Enable Command: /" + COMMAND_NAME)
+                        .getValue());
+                } catch (Exception e) {
+                    // Command cannot be disabled
+                    return true;
+                }
+            })
             // Check permissions
             .filter(command -> {
                 // Check server permissions if command was used in a server
@@ -122,17 +194,35 @@ public abstract class AbstractSlashCommandHandler extends AbstractCommandHandler
                         .getMember()
                         .get();
 
-                    if (IS_ADMIN_COMMAND) {
+                    if (isAdminCommand()) {
                         return serverPermissions.canUseAdminFunctionality(invoker);
                     }
                     return serverPermissions.canUseApplication(invoker);
-                } catch (Exception e) {}
-
-                // Command invoked in DMs
-                return true;
+                } catch (Exception e) {
+                    // Command invoked in DMs
+                    return true;
+                }
             })
-            // Run invoked command
+            // Run this command
             .flatMap(this::run);
+    }
+
+    @Override
+    protected boolean isInvokingUser(Event event, Snowflake userId) {
+        if (event instanceof ChatInputInteractionEvent) {
+            return ((ChatInputInteractionEvent) event).getInteraction()
+                .getUser()
+                .getId()
+                .equals(userId);
+        } else if (event instanceof MessageCreateEvent) {
+            return ((MessageCreateEvent) event).getMessage()
+                .getAuthor()
+                .get()
+                .getId()
+                .equals(userId);
+        }
+
+        return false;
     }
 
     /**
@@ -142,5 +232,5 @@ public abstract class AbstractSlashCommandHandler extends AbstractCommandHandler
      * @param event The event containing the message sent.
      * @return An empty Mono upon completion of execution.
      */
-    protected abstract Mono<Void> run(MessageCreateEvent event);
+    public abstract Mono<Void> run(MessageCreateEvent event);
 }
