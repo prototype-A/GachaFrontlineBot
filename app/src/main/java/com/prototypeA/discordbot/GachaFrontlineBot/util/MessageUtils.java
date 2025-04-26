@@ -25,35 +25,32 @@ public final class MessageUtils {
 
 
     /**
-     * Removes the emitted {@code MessageCreateEvent} from the passed  
-     * {@code Mono} parameter if it was sent by a bot application.
-     * 
-     * @param event The event emitted from a sent message.
-     * @return The same passed {@code Mono} with the same emitted event 
-     * if the message was not sent by a bot application.
-     */
-    public static Mono<MessageCreateEvent> filterBotMessages(Mono<MessageCreateEvent> event) {
-        return event.filter(message -> {
-            Optional<User> user = message.getMessage()
-                .getAuthor();
-            return user.isPresent() && !user.get()
-                .isBot();
-        });
-    }
-
-    /**
      * Removes the emitted {@code MessageCreateEvent} from the 
-     * passed {@code Mono} parameter if it was an application's 
-     * slash command (which also emits the event).
+     * passed {@code Mono} parameter if it was sent by an 
+     * application/bot, a user invoking an application's slash 
+     * command (which also emits the event), or if the message 
+     * did not contain any text.
      * 
      * @param event The event emitted from a sent message.
-     * @return The same passed {@code Mono} with the same emitted 
-     * event if the message did not contain an interaction.
+     * @return A {@code Mono} with the emitted message event if 
+     * the message passes the filters.
      */
-    public static Mono<MessageCreateEvent> filterSlashCommands(Mono<MessageCreateEvent> event) {
-        return event.filter(message -> !message.getMessage()
-            .getInteraction()
-            .isPresent());
+    public static Mono<MessageCreateEvent> filterMessages(MessageCreateEvent event) {
+        return Mono.just(event)
+            // Ignore application/bot messages
+            .filter(message -> {
+                Optional<User> user = message.getMessage()
+                    .getAuthor();
+                return user.isPresent() && !user.get()
+                    .isBot();
+            })
+            // Ignore slash commands
+            .filter(message -> !message.getMessage()
+                .getInteraction()
+                .isPresent())
+            // Ignore messages where there is no text
+            .filter(message-> getMessageContent(message)
+                .length() == 0);
     }
 
     /**
