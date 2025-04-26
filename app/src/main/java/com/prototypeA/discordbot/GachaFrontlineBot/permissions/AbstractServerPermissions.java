@@ -8,6 +8,9 @@ import java.util.Map;
 import org.springframework.util.CollectionUtils;
 
 
+/**
+ * The base of server permission comparison logic.
+ */
 public abstract class AbstractServerPermissions {
 
     protected final String SERVER_OWNER_ID;

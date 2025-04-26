@@ -8,6 +8,9 @@ import discord4j.common.util.Snowflake;
 import discord4j.core.object.entity.PartialMember;
 
 
+/**
+ * (Partial)Member implementation for server permissions.
+ */
 public final class ServerPermissions extends AbstractServerPermissions {
 
     /**

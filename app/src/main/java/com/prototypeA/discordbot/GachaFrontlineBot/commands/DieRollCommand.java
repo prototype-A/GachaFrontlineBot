@@ -16,6 +16,9 @@ import discord4j.discordjson.json.ApplicationCommandRequest;
 import reactor.core.publisher.Mono;
 
 
+/**
+ * Command to generate pseudo-random die rolls.
+ */
 @Component
 public class DieRollCommand extends AbstractSlashCommandHandler {
 
@@ -24,6 +27,9 @@ public class DieRollCommand extends AbstractSlashCommandHandler {
     private final String SIDES_PARAM_NAME = "sides";
     private final String AMOUNT_PARAM_NAME = "amount";
 
+    /**
+     * Constructs a new command handler to generate pseudo-random die rolls.
+     */
     public DieRollCommand() {
         super("roll", "Generates pseudo-random dice roll results.");
     }

@@ -32,6 +32,9 @@ import reactor.core.publisher.Mono;
 import reactor.core.publisher.Sinks;
 
 
+/**
+ * Command to change this application's settings for individual servers.
+ */
 @Component
 public class SettingsCommand extends AbstractSlashCommandHandler {
 
@@ -42,9 +45,7 @@ public class SettingsCommand extends AbstractSlashCommandHandler {
     private final Duration TIMEOUT_DURATION = Duration.ofSeconds(30);
 
     /**
-     * Constructs a new handler to handle changing this application's settings.
-     * 
-     * @param serverSettings Repository to retrieve saved server settings from.
+     * Constructs a new command handler to change this application's settings.
      */
     public SettingsCommand() {
         super("settings", "Adjust server preferences for this application.", List.of(

@@ -16,12 +16,18 @@ import discord4j.discordjson.json.ApplicationCommandRequest;
 import reactor.core.publisher.Mono;
 
 
+/**
+ * Command to generate pseudo-random coin flips.
+ */
 @Component
 public class CoinFlipCommand extends AbstractSlashCommandHandler {
 
     private final long DEFAULT_NUM_TIMES = 1;
     private final String AMOUNT_PARAM_NAME = "amount";
 
+    /**
+     * Constructs a new command handler to generate pseudo-random coin flips.
+     */
     public CoinFlipCommand() {
         super("flip", "Generates pseudo-random coin flip results.");
     }
