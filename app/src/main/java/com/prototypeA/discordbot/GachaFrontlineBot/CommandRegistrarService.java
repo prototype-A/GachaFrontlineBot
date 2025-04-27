@@ -8,10 +8,7 @@ import jakarta.annotation.PostConstruct;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.annotation.PropertySource;
-import org.springframework.context.annotation.PropertySources;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 
 import discord4j.common.util.Snowflake;
@@ -22,51 +19,61 @@ import discord4j.rest.RestClient;
 import reactor.core.publisher.Mono;
 
 
+/**
+ * Service that registers/updates slash commands with Discord.
+ */
 @Service
-@PropertySources({
-    @PropertySource("file:bot.properties"),
-    @PropertySource(value = "file:${spring.profiles.active}-bot.properties", ignoreResourceNotFound = true)
-})
 public class CommandRegistrarService {
 
     private static final Logger LOG = LoggerFactory.getLogger(CommandRegistrarService.class);
     
-    private final RestClient client;
-    private final List<ApplicationCommandRequest> commands;
+    private final RestClient CLIENT;
+    private final List<ApplicationCommandRequest> GLOBAL_COMMANDS;
+    private final List<ApplicationCommandRequest> SERVER_COMMANDS;
 
-    @Value("${guild}")
-    private long guildId;
-
-    public CommandRegistrarService(RestClient restClient, List<AbstractSlashCommandHandler> commands) {
-        this.client = restClient;
-        this.commands = commands.stream()
+    /**
+     * Constructs a new service to register/update slash commands.
+     * 
+     * @param restClient This application gateway's REST client.
+     * @param commands The list of this application's slash commands.
+     */
+    @Lazy
+    CommandRegistrarService(RestClient restClient, List<AbstractSlashCommandHandler> commands) {
+        CLIENT = restClient;
+        GLOBAL_COMMANDS = List.of();
+        SERVER_COMMANDS = commands.stream()
             .map(AbstractSlashCommandHandler::getCommandRequest)
             .toList();
     }
 
 
+    /**
+     * Registers slash commands that can be used in both servers and 
+     * direct messages with this application's bot user.
+     */
     @PostConstruct
-    private void registerCommands() {
-        registerGlobalCommands();
-        registerGuildCommands(guildId);
-    }
-
-    public void registerGlobalCommands() {
-        long appId = client.getApplicationId()
-            .block();
-        client.getApplicationService()
-            .bulkOverwriteGlobalApplicationCommand(appId, commands)
-            .doOnNext(_ -> LOG.info("Registered Global Slash Commands"))
-            .doOnError(e -> LOG.error("Failed to register Global Slash Commands", e))
+    private void registerGlobalCommands() {
+        CLIENT.getApplicationService()
+            .bulkOverwriteGlobalApplicationCommand(
+                CLIENT.getApplicationId()
+                    .block(),
+                GLOBAL_COMMANDS)
+            .doOnComplete(() -> LOG.info("Registered Global Slash Commands"))
+            .doOnError(error -> LOG.error("Failed to register Global Slash Commands", error))
             .onErrorResume(_ -> Mono.empty())
             .subscribe();
     }
 
-    public void registerGuildCommands(long guildId) {
-        GuildCommandRegistrar.create(client, commands)
-            .registerCommands(Snowflake.of(guildId))
-            .doOnNext(_ -> LOG.info("Registered Slash Commands for Guild {}", guildId))
-            .doOnError(e -> LOG.error("Failed to register Slash Commands for Guild " + guildId, e))
+    /**
+     * Registers slash commands that can be only used in servers.
+     * 
+     * @param guildId The ID of the server.
+     */
+    public void registerServerCommands(long serverId) {
+        GuildCommandRegistrar.create(CLIENT, SERVER_COMMANDS)
+            .registerCommands(Snowflake.of(serverId))
+            .doOnComplete(() -> LOG.info("Registered Slash Commands for Server: {}", serverId))
+            .doOnError(error -> LOG.error("Failed to register Slash Commands for Server: " + serverId, error))
             .onErrorResume(_ -> Mono.empty())
             .subscribe();
     }
